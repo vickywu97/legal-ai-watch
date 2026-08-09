@@ -1,0 +1,70 @@
+name: Weekly Model Evaluation
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'   # 每周一 00:00 UTC = 北京时间 08:00
+  workflow_dispatch:        # 允许手动触发
+
+permissions:
+  contents: write
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --upgrade pip requests
+
+      - name: Sync questions from bench (best-effort)
+        run: python scripts/sync_questions.py --source submodule || echo "sync skipped"
+
+      - name: Run evaluation
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
+        run: python scripts/run_eval.py --date $(date +%Y-%m-%d) --output data/
+
+      - name: Generate dashboard
+        run: python scripts/generate_dashboard.py --data data/ --output dashboard/
+
+      - name: Commit results & dashboard
+        run: |
+          git config user.name "legal-ai-watch[bot]"
+          git config user.email "bot@legal-ai-watch.dev"
+          git add data/ dashboard/ CHANGELOG.md
+          git commit -m "eval: $(date +%Y-%m-%d) weekly evaluation" || echo "nothing to commit"
+
+      - name: Push to main
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dashboard
+          publish_branch: gh-pages
+
+      - name: Post to social (optional)
+        if: ${{ env.POST_SOCIAL == 'true' }}
+        env:
+          POST_SOCIAL: ${{ secrets.POST_SOCIAL }}
+          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+        run: python scripts/post_to_social.py --date $(date +%Y-%m-%d) --data data/ --platforms twitter,linkedin

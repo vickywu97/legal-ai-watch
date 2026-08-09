@@ -1,0 +1,30 @@
+{
+  "DeepSeek-R1": {
+    "vendor": "DeepSeek",
+    "version": "R1 (2501)",
+    "params": "671B MoE",
+    "context": "64K",
+    "release": "2025-01"
+  },
+  "Qwen-Max": {
+    "vendor": "Alibaba",
+    "version": "qwen-max",
+    "params": "—",
+    "context": "32K",
+    "release": "2024-09"
+  },
+  "GLM-4": {
+    "vendor": "Zhipu AI",
+    "version": "glm-4",
+    "params": "—",
+    "context": "128K",
+    "release": "2024-06"
+  },
+  "Kimi-K2": {
+    "vendor": "Moonshot AI",
+    "version": "moonshot-v1-8k",
+    "params": "—",
+    "context": "8K",
+    "release": "2024-08"
+  }
+}

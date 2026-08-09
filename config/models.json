@@ -1,0 +1,48 @@
+{
+  "models": [
+    {
+      "id": "DeepSeek-R1",
+      "display_name": "DeepSeek-R1",
+      "vendor": "DeepSeek",
+      "provider": "deepseek",
+      "api_base": "https://api.deepseek.com/chat/completions",
+      "model": "deepseek-reasoner",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "context_window": 64000,
+      "enabled": true
+    },
+    {
+      "id": "Qwen-Max",
+      "display_name": "Qwen-Max",
+      "vendor": "Alibaba (DashScope)",
+      "provider": "dashscope",
+      "api_base": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+      "model": "qwen-max",
+      "api_key_env": "DASHSCOPE_API_KEY",
+      "context_window": 32768,
+      "enabled": true
+    },
+    {
+      "id": "GLM-4",
+      "display_name": "GLM-4",
+      "vendor": "Zhipu AI",
+      "provider": "zhipu",
+      "api_base": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+      "model": "glm-4",
+      "api_key_env": "ZHIPU_API_KEY",
+      "context_window": 128000,
+      "enabled": true
+    },
+    {
+      "id": "Kimi-K2",
+      "display_name": "Kimi-K2",
+      "vendor": "Moonshot AI",
+      "provider": "moonshot",
+      "api_base": "https://api.moonshot.cn/v1/chat/completions",
+      "model": "moonshot-v1-8k",
+      "api_key_env": "MOONSHOT_API_KEY",
+      "context_window": 8192,
+      "enabled": true
+    }
+  ]
+}

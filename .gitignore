@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Secrets / local config
+config/secrets.yml
+.env
+*.local
+
+# Tooling data caches
+data/cache/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# WorkBuddy project data
+.workbuddy/
+
+# Generated, but keep dashboard output committed for Pages
+# (dashboard/ is generated; it is intentionally committed for gh-pages source)
