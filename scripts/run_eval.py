@@ -11,8 +11,11 @@ run_eval.py — Legal AI Watch 主评测脚本
      并将本轮排行榜追加写入 data/leaderboard_history.json.
 
 设计原则:
-  - 与 bench 解耦: 若 bench submodule / 已安装包可用, 优先委托其 verify();
-    否则使用本文件的本地兜底核验器 (仅用于演示与离线开发, 不应用于正式发布).
+  - 与 bench 解耦: 若 bench 以可导入包形式提供 verify(), 优先委托其核验;
+    否则使用本文件的本地核验器 (verify_local). 当前 bench 仓库尚未打包为可导入
+    模块, 故线上实际运行的即是 verify_local —— 已对法条名/条号做归一化, 并对
+    "未作答"/"不可验证"题目做诚实处理, 不应再出现把正确全称引注误判为幻觉、
+    或把零引注模型误标为最佳的情况.
   - 零外部状态: 所有产物均为文件, 可复现.
 
 Usage:
@@ -42,6 +45,73 @@ CITATION_RE = re.compile(r"《([^》]+)》\s*第\s*([0-9零一二三四五六七
 
 # Statuses that count as hallucination
 HALLUCINATION_STATUSES = {"✗MA", "✗NF", "✗F"}
+
+
+# ----------------------------------------------------------------------------
+# Citation normalization (law-name canonicalization)
+# ----------------------------------------------------------------------------
+# Models frequently cite the full official title (《中华人民共和国民法典》)
+# while expected_citation uses the short name (《民法典》). These denote the SAME
+# law, so we canonicalize before comparing — otherwise correct citations get
+# falsely flagged as hallucinations (the bug seen in the first live run).
+LAW_NAME_ALIASES = {
+    "中华人民共和国民法典": "民法典",
+    "中华人民共和国刑法": "刑法",
+    "中华人民共和国公司法": "公司法",
+    "中华人民共和国个人所得税法": "个人所得税法",
+    "中华人民共和国增值税法": "增值税法",
+    "中华人民共和国增值税暂行条例": "增值税暂行条例",
+    "中华人民共和国专利法": "专利法",
+    "中华人民共和国劳动合同法": "劳动合同法",
+    "中华人民共和国合同法": "合同法",
+}
+
+_CN_NUM = {"零": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6,
+           "七": 7, "八": 8, "九": 9, "十": 10, "百": 100, "千": 1000}
+
+
+def cn_to_int(s: str) -> int:
+    """Convert a Chinese numeral (up to 9999) or arabic numeral string to int."""
+    s = (s or "").strip()
+    if s.isdigit():
+        return int(s)
+    total = 0
+    current = 0
+    for ch in s:
+        if ch in ("十", "百", "千"):
+            unit = _CN_NUM[ch]
+            if current == 0:
+                current = 1
+            total += current * unit
+            current = 0
+        else:
+            current = _CN_NUM.get(ch, 0)
+    total += current
+    return total
+
+
+def normalize_law_name(name: str) -> str:
+    n = (name or "").strip()
+    n = re.sub(r"^中华人民共和国", "", n)        # 民法典 ≡ 中华人民共和国民法典
+    n = LAW_NAME_ALIASES.get(n, n)
+    n = re.sub(r"\s+", "", n)                  # drop internal whitespace
+    return n
+
+
+def citation_key(cite: str) -> str:
+    """Canonical key for a citation: '<law>#<article>[#<clause>]'.
+
+    Robust to official-name vs short-name variants and to arabic vs Chinese
+    numerals, so 《中华人民共和国民法典》第584条 and 《民法典》第584条 collide.
+    """
+    m = CITATION_RE.search(cite or "")
+    if not m:
+        return normalize_law_name(cite or "")
+    law = normalize_law_name(m.group(1))
+    article = cn_to_int(m.group(2))
+    clause = m.group(3)
+    clause_key = f"#{cn_to_int(clause)}" if clause else ""
+    return f"{law}#{article}{clause_key}"
 
 
 def extract_citations(text: str) -> list[str]:
@@ -113,23 +183,33 @@ def _try_import_bench_verifier():
 
 
 def verify_local(question: dict, answer: str) -> dict:
-    """
-    Local fallback verifier (DEMO ONLY).
+    """Verify a single answer against expected_citation.
 
-    Heuristic: for a verifiable question with an expected_citation, check whether
-    the answer contains a correctly formatted citation matching the expected one.
-    This is intentionally simple and NOT authoritative — production delegates to
-    the bench engine which checks against the authoritative statute knowledge base.
+    Production is designed to delegate to the bench verification engine (which
+    checks against the authoritative statute knowledge base). The bench repo is
+    NOT currently packaged as an importable module, so this function is the
+    active engine in the live pipeline. It has been hardened to avoid publishing
+    misleading numbers:
+
+      * canonicalizes law names (《民法典》≡《中华人民共和国民法典》) and article
+        numerals (第584条 ≡ 第五百八十四条),
+      * treats unanswered questions (no citation) as '·' (not a false 0% best),
+      * treats unverifiable questions / missing expected_citation as '?' rather
+        than penalizing them as hallucinations.
     """
     citations = extract_citations(answer)
+    verifiable = question.get("verifiable", True)
     expected = question.get("expected_citation", "")
-    norm_expected = expected.replace(" ", "")
 
     if not citations:
         return {"status": "·", "detail": "未识别到法条引注", "citations": []}
 
-    # Check if any extracted citation matches the expected one (ignoring spaces)
-    matched = any(c.replace(" ", "") == norm_expected for c in citations)
+    if not verifiable or not expected:
+        # We cannot judge correctness against a knowledge base; do not penalize.
+        return {"status": "?", "detail": "无法判定（题目不可验证或无预期引注）", "citations": citations}
+
+    key_expected = citation_key(expected)
+    matched = any(citation_key(c) == key_expected for c in citations)
     if matched:
         return {"status": "✓", "detail": f"命中预期引注 {expected}", "citations": citations}
     # A citation exists but does not match the expected verifiable citation
@@ -276,8 +356,15 @@ def build_leaderboard(model_results: dict) -> list[dict]:
         total = len(denom)
         hallucinated = sum(1 for v in denom if v["status"] in HALLUCINATION_STATUSES)
         correct = sum(1 for v in denom if v["status"] == "✓")
-        hvi = round(hallucinated / total, 4) if total else 0.0
-        crfi = round(correct / total, 4) if total else 0.0
+        if total == 0:
+            # Model cited nothing verifiable → "未作答"; never a false 0% best.
+            hvi = None
+            crfi = None
+            rank = None
+        else:
+            hvi = round(hallucinated / total, 4)
+            crfi = round(correct / total, 4)
+            rank = 0
         rows.append({
             "model": model_id,
             "hvi": hvi,
@@ -285,9 +372,14 @@ def build_leaderboard(model_results: dict) -> list[dict]:
             "crfi": crfi,
             "temporal": 0.0,  # populated by bench verifier in production
             "answered": len(verifs),
+            "rank": rank,
         })
-    rows.sort(key=lambda r: (r["hvi"], -r["citations"]))
-    for i, r in enumerate(rows, 1):
+    # Answered models first (by HVI asc, then more citations); unanswered last.
+    rows.sort(key=lambda r: (1 if r["hvi"] is None else 0,
+                             r["hvi"] if r["hvi"] is not None else 0.0,
+                             -r["citations"]))
+    answered = [r for r in rows if r["hvi"] is not None]
+    for i, r in enumerate(answered, 1):
         r["rank"] = i
     return rows
 
@@ -303,7 +395,7 @@ def build_domain_hvi(model_results: dict) -> dict:
             denom = [v for v in vs if v["status"] in {"✓", "✗MA", "✗NF", "✗F"}]
             total = len(denom)
             hall = sum(1 for v in denom if v["status"] in HALLUCINATION_STATUSES)
-            out[model_id][dom] = round(hall / total, 4) if total else 0.0
+            out[model_id][dom] = round(hall / total, 4) if total else None
     return out
 
 
