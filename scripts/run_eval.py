@@ -129,8 +129,15 @@ def extract_citations(text: str) -> list[str]:
 # ----------------------------------------------------------------------------
 # Model API (OpenAI-compatible)
 # ----------------------------------------------------------------------------
-def call_model(model_cfg: dict, prompt: str, api_key: str, timeout: int = 60) -> str:
-    """Call an OpenAI-compatible chat endpoint and return the assistant text."""
+def call_model(model_cfg: dict, prompt: str, api_key: str, timeout: int = 90,
+               max_retries: int = 5, backoff: float = 2.0) -> str:
+    """Call an OpenAI-compatible chat endpoint and return the assistant text.
+
+    Retries transient network errors (ReadTimeout / ConnectionError) with
+    exponential backoff. Raises on final failure so the caller can record the
+    question as unanswered rather than crash the whole run. Non-transient errors
+    (auth, 4xx, bad JSON) fail fast without retrying.
+    """
     if not api_key:
         raise RuntimeError(
             f"No API key for {model_cfg['id']} (env {model_cfg['api_key_env']}). "
@@ -138,6 +145,7 @@ def call_model(model_cfg: dict, prompt: str, api_key: str, timeout: int = 60) ->
         )
     try:
         import requests
+        from requests.exceptions import ReadTimeout, ConnectionError as ConnError
     except ImportError:  # pragma: no cover
         raise RuntimeError("Missing dependency: requests.  Install with `pip install requests`.")
     payload = {
@@ -150,10 +158,24 @@ def call_model(model_cfg: dict, prompt: str, api_key: str, timeout: int = 60) ->
         "max_tokens": 1024,
     }
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    resp = requests.post(model_cfg["api_base"], json=payload, headers=headers, timeout=timeout)
-    resp.raise_for_status()
-    data = resp.json()
-    return data["choices"][0]["message"]["content"].strip()
+    last_err = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            resp = requests.post(model_cfg["api_base"], json=payload, headers=headers, timeout=timeout)
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"].strip()
+        except (ReadTimeout, ConnError) as e:  # transient network — retry
+            last_err = e
+            if attempt < max_retries:
+                wait = backoff * (2 ** (attempt - 1))
+                print(f"  [warn] {model_cfg['id']} attempt {attempt}/{max_retries} failed ({type(e).__name__}); retry in {wait:.0f}s", flush=True)
+                time.sleep(wait)
+            else:
+                print(f"  [warn] {model_cfg['id']} exhausted {max_retries} retries ({type(e).__name__}); marking unanswered", flush=True)
+        except Exception:
+            raise  # non-transient — fail fast
+    raise last_err if last_err else RuntimeError("unknown model-call error")
 
 
 # ----------------------------------------------------------------------------

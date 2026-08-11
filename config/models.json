@@ -39,7 +39,7 @@
       "vendor": "Moonshot AI",
       "provider": "moonshot",
       "api_base": "https://api.moonshot.cn/v1/chat/completions",
-      "model": "moonshot-v1-8k",
+      "model": "kimi-k2.6",
       "api_key_env": "MOONSHOT_API_KEY",
       "context_window": 8192,
       "enabled": true
