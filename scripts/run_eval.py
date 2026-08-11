@@ -99,19 +99,24 @@ def normalize_law_name(name: str) -> str:
 
 
 def citation_key(cite: str) -> str:
-    """Canonical key for a citation: '<law>#<article>[#<clause>]'.
+    """Canonical key for a citation: '<law>#<article>'.
 
-    Robust to official-name vs short-name variants and to arabic vs Chinese
-    numerals, so 《中华人民共和国民法典》第584条 and 《民法典》第584条 collide.
+    Matching is performed at *article* granularity (law name + article number),
+    robust to:
+      * official-name vs short-name variants (《民法典》≡《中华人民共和国民法典》),
+      * arabic vs Chinese numerals (第584条 ≡ 第五百八十四条),
+      * clause (款) precision differences — citing 《民法典》第496条第2款 when the
+        expected citation is 《民法典》第496条 is still the correct article and must
+        NOT be flagged as a hallucination. Real errors (wrong law, or wrong article
+        number, e.g. 第13条 vs 第15条) are still caught because the article number
+        differs.
     """
     m = CITATION_RE.search(cite or "")
     if not m:
         return normalize_law_name(cite or "")
     law = normalize_law_name(m.group(1))
     article = cn_to_int(m.group(2))
-    clause = m.group(3)
-    clause_key = f"#{cn_to_int(clause)}" if clause else ""
-    return f"{law}#{article}{clause_key}"
+    return f"{law}#{article}"
 
 
 def extract_citations(text: str) -> list[str]:

@@ -23,4 +23,9 @@ Each line follows: `YYYY-MM-DD · <scope> · <summary>`
 - 确认 bench 仓库当前未打包为可导入模块（`legal_hallucination_bench/verify.py` 不存在），故线上实际运行的是已加固的 `verify_local`；`run_eval.py` 顶部说明已同步更新。
 - 影响：需重新运行一次 Manual Model Evaluation 以用修正后的核验器覆盖首版（含误报）的真实数据。
 
+## 2026-08-11 · fix · 匹配粒度降至“法条名+条号”，忽略款/项差异
+- **款/项精度不再误判**：`citation_key` 现仅取「法条名#条号」做匹配，忽略「第X款/项」差异。模型援引《民法典》第496条第2款而预期为《民法典》第496条、或援引《专利法》第二十三条而预期为第23条第1款，均判为命中（✓），不再误标 ✗MA。
+- **真实错引仍被捕获**：错引不同条号（如《专利法》第13条 vs 第15条、《公司法》第66条 vs 第43条、第224条 vs 第177条）因条号不同仍判 ✗；不同法域（如《增值税暂行条例》第10条 vs 《营改增试点实施办法》第25条）亦维持 ✗。
+- 影响：本版修正后，首轮真实数据中的 Q2(DeepSeek)、Q7(GLM-4) 由误判 ✗MA 转为 ✓；DeepSeek HVI 由 25%→约 12.5%，GLM-4 由 40%→约 30%。需重新运行 Manual Model Evaluation 以刷新榜单。
+
 <!-- NEW ENTRIES APPENDED ABOVE THIS LINE BY THE WEEKLY WORKFLOW -->
