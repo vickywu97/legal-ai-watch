@@ -220,6 +220,15 @@ def verify_local(question: dict, answer: str) -> dict:
 
       * canonicalizes law names (《民法典》≡《中华人民共和国民法典》) and article
         numerals (第584条 ≡ 第五百八十四条),
+      * accepts user-declared *equivalent* citations: a question may carry an
+        `acceptable_citations` list (each with a required `justification`). A hit
+        on any acceptable citation counts as correct exactly like hitting
+        `expected_citation` — this is the "equivalence argument gate" described in
+        docs/METHODOLOGY.md §8, so models citing a substantively equivalent legal
+        source (e.g. a current implementing rule vs the principle statute) are not
+        unfairly penalized,
+      * matches at *article* granularity, so clause (款/项) precision differences
+        are not flagged as hallucinations,
       * treats unanswered questions (no citation) as '·' (not a false 0% best),
       * treats unverifiable questions / missing expected_citation as '?' rather
         than penalizing them as hallucinations.
@@ -236,9 +245,28 @@ def verify_local(question: dict, answer: str) -> dict:
         return {"status": "?", "detail": "无法判定（题目不可验证或无预期引注）", "citations": citations}
 
     key_expected = citation_key(expected)
-    matched = any(citation_key(c) == key_expected for c in citations)
-    if matched:
+    keys_actual = [citation_key(c) for c in citations]
+
+    # User-declared equivalent citations (each must carry a justification — see
+    # docs/METHODOLOGY.md §8). A hit on any acceptable citation is correct.
+    acceptable = question.get("acceptable_citations") or []
+    matched_alt = None
+    for alt in acceptable:
+        alt_cite = alt.get("citation", "") if isinstance(alt, dict) else str(alt)
+        if citation_key(alt_cite) in keys_actual:
+            matched_alt = alt
+            break
+
+    if key_expected in keys_actual:
         return {"status": "✓", "detail": f"命中预期引注 {expected}", "citations": citations}
+    if matched_alt is not None:
+        alt_cite = matched_alt.get("citation", "") if isinstance(matched_alt, dict) else str(matched_alt)
+        just = matched_alt.get("justification", "") if isinstance(matched_alt, dict) else ""
+        return {
+            "status": "✓",
+            "detail": f"命中可接受等价引注 {alt_cite}（等价性论证：{just}）",
+            "citations": citations,
+        }
     # A citation exists but does not match the expected verifiable citation
     return {
         "status": "✗MA",

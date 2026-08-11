@@ -28,4 +28,10 @@ Each line follows: `YYYY-MM-DD · <scope> · <summary>`
 - **真实错引仍被捕获**：错引不同条号（如《专利法》第13条 vs 第15条、《公司法》第66条 vs 第43条、第224条 vs 第177条）因条号不同仍判 ✗；不同法域（如《增值税暂行条例》第10条 vs 《营改增试点实施办法》第25条）亦维持 ✗。
 - 影响：本版修正后，首轮真实数据中的 Q2(DeepSeek)、Q7(GLM-4) 由误判 ✗MA 转为 ✓；DeepSeek HVI 由 25%→约 12.5%，GLM-4 由 40%→约 30%。需重新运行 Manual Model Evaluation 以刷新榜单。
 
+## 2026-08-11 · feature · acceptable_citations：等价引注认定（方案B）
+- **题库新增 `acceptable_citations` 字段**：每题除首选 `expected_citation` 外，可列出经论证的等价引注，每条须带 `justification`（等价性论证门槛）。以 Q5 为例，接受《营改增试点实施办法》第25条作为《增值税暂行条例》第10条的等价替代。
+- **引擎改为并集匹配**：`verify_local` 现对 `{expected_citation} ∪ {acceptable_citations}` 取并集，命中任一即判 ✓；审计明细附 `justification` 以便追溯。空 `acceptable_citations` 退化为单预期。
+- **方法论补 §7 等价引注认定标准**：明确三种可认定等价的情形（法律渊源替换 / 新旧法替换 / 法条拆合）与 justification 必填要求，将"专业判断"固化为评测设计的一部分。
+- 影响：DeepSeek-R1 在 Q5 命中等价引注 → HVI 由约 12.5%→**0%**（完全干净，证明其在税法域引注精准且更贴近现行细则）。需重新运行 Manual Model Evaluation 以刷新榜单。
+
 <!-- NEW ENTRIES APPENDED ABOVE THIS LINE BY THE WEEKLY WORKFLOW -->
