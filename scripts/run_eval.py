@@ -224,7 +224,7 @@ def verify_local(question: dict, answer: str) -> dict:
         `acceptable_citations` list (each with a required `justification`). A hit
         on any acceptable citation counts as correct exactly like hitting
         `expected_citation` — this is the "equivalence argument gate" described in
-        docs/METHODOLOGY.md §8, so models citing a substantively equivalent legal
+        docs/METHODOLOGY.md §7, so models citing a substantively equivalent legal
         source (e.g. a current implementing rule vs the principle statute) are not
         unfairly penalized,
       * matches at *article* granularity, so clause (款/项) precision differences
@@ -248,7 +248,7 @@ def verify_local(question: dict, answer: str) -> dict:
     keys_actual = [citation_key(c) for c in citations]
 
     # User-declared equivalent citations (each must carry a justification — see
-    # docs/METHODOLOGY.md §8). A hit on any acceptable citation is correct.
+    # docs/METHODOLOGY.md §7). A hit on any acceptable citation is correct.
     acceptable = question.get("acceptable_citations") or []
     matched_alt = None
     for alt in acceptable:
