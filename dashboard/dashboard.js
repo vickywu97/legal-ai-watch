@@ -10,7 +10,7 @@
   const PALETTE = ["#2563eb","#0f766e","#d97706","#db2777","#7c3aed","#0891b2","#ca8a04","#16a34a"];
   const colorFor = (i) => PALETTE[i % PALETTE.length];
 
-  function pct(x){ return (x*100).toFixed(0) + "%"; }
+  function pct(x){ return ((x==null?0:x)*100).toFixed(0) + "%"; }
   function hviColor(h){ // red high, green low
     if (h <= 0.15) return "#16a34a";
     if (h <= 0.35) return "#d97706";
@@ -25,7 +25,8 @@
   const latest = HISTORY.length ? HISTORY[HISTORY.length - 1] : null;
   const kpiBox = document.getElementById("kpi-cards");
   if (latest) {
-    const lb = latest.leaderboard || [];
+    const allRows = latest.leaderboard || [];
+    const lb = allRows.filter(r => r.hvi != null);   // ranked (answered) models only
     const best = lb[0];
     const worst = lb[lb.length - 1];
     const avg = lb.length ? lb.reduce((s,r)=>s+r.hvi,0)/lb.length : 0;
@@ -44,10 +45,14 @@
     tbody.innerHTML = (latest.leaderboard||[]).map((r,i)=>{
       const m = META[r.model] || {};
       const mv = [m.vendor, m.version].filter(Boolean).join(" · ") || "—";
+      const rankCell = (r.rank==null) ? "—" : r.rank;
+      const hviCell = (r.hvi==null)
+        ? `<span class="hvi-pill" style="background:#94a3b8">未作答</span>`
+        : `<span class="hvi-pill" style="background:${hviColor(r.hvi)}">${pct(r.hvi)}</span>`;
       return `<tr>
-        <td><span class="rank-badge">${r.rank}</span></td>
+        <td><span class="rank-badge">${rankCell}</span></td>
         <td><strong>${r.model}</strong></td>
-        <td class="num"><span class="hvi-pill" style="background:${hviColor(r.hvi)}">${pct(r.hvi)}</span></td>
+        <td class="num">${hviCell}</td>
         <td class="num">${r.citations}</td>
         <td class="num">${pct(r.crfi||0)}</td>
         <td class="num">${pct(r.temporal||0)}</td>
@@ -62,7 +67,7 @@
     const datasets = MODELS.map((m,i)=>{
       const data = HISTORY.map(h=>{
         const row = (h.leaderboard||[]).find(r=>r.model===m);
-        return row ? +(row.hvi*100).toFixed(1) : null;
+        return (row && row.hvi != null) ? +(row.hvi*100).toFixed(1) : null;
       });
       return {label:m, data, borderColor:colorFor(i), backgroundColor:colorFor(i),
         tension:.25, spanGaps:true, pointRadius:3};
