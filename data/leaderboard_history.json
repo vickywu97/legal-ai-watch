@@ -89,28 +89,28 @@
       "date": "2026-08-11",
       "leaderboard": [
         {
-          "model": "Qwen-Max",
-          "hvi": 0.2,
-          "citations": 10,
-          "crfi": 0.8,
+          "model": "DeepSeek-R1",
+          "hvi": 0.125,
+          "citations": 8,
+          "crfi": 0.875,
           "temporal": 0.0,
           "answered": 10,
           "rank": 1
         },
         {
-          "model": "DeepSeek-R1",
-          "hvi": 0.25,
-          "citations": 8,
-          "crfi": 0.75,
+          "model": "Qwen-Max",
+          "hvi": 0.3,
+          "citations": 10,
+          "crfi": 0.7,
           "temporal": 0.0,
           "answered": 10,
           "rank": 2
         },
         {
           "model": "GLM-4",
-          "hvi": 0.4,
+          "hvi": 0.3,
           "citations": 10,
-          "crfi": 0.6,
+          "crfi": 0.7,
           "temporal": 0.0,
           "answered": 10,
           "rank": 3
@@ -127,16 +127,16 @@
       ],
       "domain_hvi": {
         "DeepSeek-R1": {
-          "民法": 0.5,
+          "民法": 0.0,
           "刑法": 0.0,
-          "税法": 0.5,
+          "税法": 0.0,
           "专利": 0.0,
-          "公司法": null
+          "公司法": 0.5
         },
         "Qwen-Max": {
           "民法": 0.0,
           "刑法": 0.0,
-          "税法": 0.0,
+          "税法": 0.5,
           "专利": 0.0,
           "公司法": 1.0
         },
@@ -144,7 +144,7 @@
           "民法": 0.0,
           "刑法": 0.0,
           "税法": 0.0,
-          "专利": 1.0,
+          "专利": 0.5,
           "公司法": 1.0
         },
         "Kimi-K2": {
