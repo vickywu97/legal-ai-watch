@@ -134,7 +134,7 @@
   if (audit && latest) {
     const d = latest.date;
     audit.innerHTML = MODELS.map(m=>
-      `<li><a href="https://github.com/vickywu97/legal-ai-watch/blob/main/data/answers/${d}/verifications.jsonl" target="_blank" rel="noopener">${m} (${d})</a> — 原始回答与核验逐条记录</li>`
+      `<li><a href="data/answers/${d}/verifications.jsonl" target="_blank" rel="noopener">${m} (${d})</a> — 原始回答与核验逐条记录</li>`
     ).join("");
   }
 })();
