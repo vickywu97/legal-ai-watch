@@ -29,6 +29,15 @@ jobs:
       - name: Sync questions from bench (best-effort)
         run: python scripts/sync_questions.py --source submodule || echo "sync skipped"
 
+      - name: Restore previous leaderboard history from gh-pages
+        # Generated artifacts are no longer committed to main; the trend
+        # history lives on gh-pages. Pull it back so weeks accumulate.
+        run: |
+          mkdir -p data
+          curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/gh-pages/data/leaderboard_history.json" \
+            -o data/leaderboard_history.json || echo "no prior history on gh-pages"
+        continue-on-error: true
+
       - name: Run evaluation
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
@@ -39,19 +48,6 @@ jobs:
 
       - name: Generate dashboard
         run: python scripts/generate_dashboard.py --data data/ --output dashboard/
-
-      - name: Commit results & dashboard
-        run: |
-          git config user.name "legal-ai-watch[bot]"
-          git config user.email "bot@legal-ai-watch.dev"
-          git add data/ dashboard/ CHANGELOG.md
-          git commit -m "eval: $(date +%Y-%m-%d) weekly evaluation" || echo "nothing to commit"
-
-      - name: Push to main
-        uses: ad-m/github-push-action@v0.8.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

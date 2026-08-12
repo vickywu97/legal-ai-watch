@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 from datetime import date as date_cls
 from pathlib import Path
 
@@ -79,7 +80,11 @@ def build_matrix(latest_dir: Path | None):
 def generate(data_root: Path, out_dir: Path):
     history = load_json(data_root / "leaderboard_history.json") or {
         "updated_at": date_cls.today().isoformat(), "models": [], "domains": [], "history": []}
-    metadata = load_json(data_root / "model_metadata.json") or {}
+    # Model vendor/version metadata lives in config/ (source), with a fallback
+    # to a data/-side copy for backward compatibility.
+    metadata = (load_json(data_root / "model_metadata.json")
+                or load_json(ROOT / "config" / "model_metadata.json")
+                or {})
     latest_dir = find_latest_answers_dir(data_root)
     questions, matrix_models, matrix = build_matrix(latest_dir)
 
@@ -109,6 +114,18 @@ def generate(data_root: Path, out_dir: Path):
 
     html = HTML_TEMPLATE.replace("/*__WATCH_DATA__*/", json.dumps(payload, ensure_ascii=False))
     (out_dir / "index.html").write_text(html, encoding="utf-8")
+
+    # Embed the eval data into the published dashboard so the site is fully
+    # self-contained on gh-pages: audit/download links use relative paths and
+    # no longer depend on the main branch (which no longer stores generated
+    # artifacts). Generated artifacts are published to gh-pages only.
+    if data_root.exists():
+        dest = out_dir / "data"
+        if dest.exists():
+            shutil.rmtree(dest)
+        shutil.copytree(data_root, dest)
+        print(f"[dashboard] embedded data/ -> {dest} (self-contained site)")
+
     print(f"[dashboard] wrote {out_dir / 'index.html'} ({len(payload['history'])} weeks, "
           f"{len(models)} models, {len(questions)} questions in matrix)")
     return payload
@@ -190,7 +207,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="wrap">
     <p>评测引擎: <a href="https://github.com/vickywu97/legal-hallucination-bench" target="_blank" rel="noopener">legal-hallucination-bench</a>
        · 方法论文档: <a href="https://github.com/vickywu97/legal-ai-watch/blob/main/docs/METHODOLOGY.md" target="_blank" rel="noopener">METHODOLOGY</a>
-       · 数据下载: <a href="https://github.com/vickywu97/legal-ai-watch/tree/main/data" target="_blank" rel="noopener">data/</a></p>
+       · 数据下载: <a href="data/" target="_blank" rel="noopener">data/</a></p>
     <p class="copy">© 2026 Legal AI Watch · MIT License · Built by Vicky Wu</p>
   </div>
 </footer>
@@ -410,7 +427,7 @@ JS = """
   if (audit && latest) {
     const d = latest.date;
     audit.innerHTML = MODELS.map(m=>
-      `<li><a href="https://github.com/vickywu97/legal-ai-watch/blob/main/data/answers/${d}/verifications.jsonl" target="_blank" rel="noopener">${m} (${d})</a> — 原始回答与核验逐条记录</li>`
+      `<li><a href="data/answers/${d}/verifications.jsonl" target="_blank" rel="noopener">${m} (${d})</a> — 原始回答与核验逐条记录</li>`
     ).join("");
   }
 })();

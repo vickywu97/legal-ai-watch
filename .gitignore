@@ -24,5 +24,8 @@ Thumbs.db
 # WorkBuddy project data
 .workbuddy/
 
-# Generated, but keep dashboard output committed for Pages
-# (dashboard/ is generated; it is intentionally committed for gh-pages source)
+# Generated artifacts — produced by the eval workflow and published to the
+# gh-pages branch. They are NEVER committed to main (keeps main as pure
+# source and avoids the recurring "fetch first" push conflict).
+data/
+dashboard/
