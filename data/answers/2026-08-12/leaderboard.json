@@ -3,9 +3,9 @@
   "leaderboard": [
     {
       "model": "DeepSeek-R1",
-      "hvi": 0.0,
-      "citations": 8,
-      "crfi": 1.0,
+      "hvi": 0.1667,
+      "citations": 6,
+      "crfi": 0.8333,
       "temporal": 0.0,
       "answered": 10,
       "rank": 1
@@ -42,9 +42,9 @@
     "DeepSeek-R1": {
       "民法": 0.0,
       "刑法": 0.0,
-      "税法": 0.0,
+      "税法": null,
       "专利": 0.0,
-      "公司法": 0.0
+      "公司法": 1.0
     },
     "Qwen-Max": {
       "民法": 0.0,
