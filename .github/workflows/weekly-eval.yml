@@ -44,7 +44,7 @@ jobs:
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
           MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
-        run: python scripts/run_eval.py --date $(date +%Y-%m-%d) --output data/
+        run: python scripts/run_eval.py --date $(date +%Y-%m-%d) --output data/ --samples 3
 
       - name: Generate dashboard
         run: python scripts/generate_dashboard.py --data data/ --output dashboard/

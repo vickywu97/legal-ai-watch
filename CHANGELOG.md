@@ -10,6 +10,11 @@ Each line follows: `YYYY-MM-DD · <scope> · <summary>`
 
 ---
 
+## 2026-08-13 · methodology · 多次取样抑制非确定性 + Kimi 退出评测池
+- **多次取样方差控制**：每题每模型取样 N 次（默认 3，`--samples` 可调），逐题展示多数判定、矩阵 cell 标注取样占比；HVI/CRFI/分领域 HVI 改为跨全部取样汇总（错引样本数 ÷ 含引注样本数），把跨轮非确定性（实测同题隔轮 HVI 波动）摊薄，提升榜单可复现性。见 METHODOLOGY §8。
+- **Kimi-K2 退出评测池**：Moonshot API 持续 429 限流、难以获得稳定回答，于 `config/models.json` 置 `enabled:false`；`model_metadata.json` 同步移除。新一期历史模型列表仅含 DeepSeek-R1 / Qwen-Max / GLM-4。
+- 工作流新增 `samples` 输入（manual）并显式传参（weekly 固定 3）；其余 CI 行为不变。
+
 ## 2026-08-08 · launch · Project v1.0 went live
 - Initial public leaderboard published with 4 models: DeepSeek-R1, Qwen-Max, GLM-4, Kimi-K2.
 - HVI (Hallucination of Verifiable Citations Index) methodology v1.0 adopted.

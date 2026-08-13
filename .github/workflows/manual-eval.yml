@@ -11,6 +11,10 @@ on:
         description: 'Comma-separated model ids to re-eval (empty = all enabled).'
         required: false
         default: ''
+      samples:
+        description: 'Samples per (model, question) for variance suppression. Higher = more stable HVI, more API calls.'
+        required: false
+        default: '3'
 
 permissions:
   contents: write
@@ -51,7 +55,9 @@ jobs:
         run: |
           EVAL_DATE="${{ github.event.inputs.date }}"
           [ -z "$EVAL_DATE" ] && EVAL_DATE=$(date +%Y-%m-%d)
-          python scripts/run_eval.py --date "$EVAL_DATE" --output data/
+          SAMPLES="${{ github.event.inputs.samples }}"
+          [ -z "$SAMPLES" ] && SAMPLES=3
+          python scripts/run_eval.py --date "$EVAL_DATE" --output data/ --samples "$SAMPLES"
 
       - name: Generate dashboard
         run: python scripts/generate_dashboard.py --data data/ --output dashboard/

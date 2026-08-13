@@ -42,7 +42,8 @@
       "model": "kimi-k2.6",
       "api_key_env": "MOONSHOT_API_KEY",
       "context_window": 8192,
-      "enabled": true
+      "enabled": false,
+      "disabled_reason": "Moonshot API 持续 429 限流, 难以获得稳定回答, 暂退出评测池"
     }
   ]
 }

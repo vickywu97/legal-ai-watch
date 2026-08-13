@@ -17,6 +17,10 @@ run_eval.py — Legal AI Watch 主评测脚本
     "未作答"/"不可验证"题目做诚实处理, 不应再出现把正确全称引注误判为幻觉、
     或把零引注模型误标为最佳的情况.
   - 零外部状态: 所有产物均为文件, 可复现.
+  - 抑制非确定性: 即便 temperature=0, 各模型回答仍非完全确定 (实测同题跨轮 HVI 波动).
+    故每题每模型取样 N 次 (--samples, 默认 3), 逐题取*多数判定*作为矩阵展示,
+    HVI/CRFI/分领域 HVI 则跨*全部*取样汇总 (错引样本数 / 含引注样本数), 将方差摊薄,
+    使榜单可复现. 矩阵 cell 的 tip 标注 "k/n 取样正确/错引" 以透明化方差.
 
 Usage:
   python scripts/run_eval.py --date 2026-08-08 --output data/
@@ -284,6 +288,81 @@ def verify_answer(verifier, question: dict, answer: str) -> dict:
     return verify_local(question, answer)
 
 
+# Tie-break priority for the *displayed* per-question verdict when sampling
+# yields no strict majority. For a hallucination-watch board we are
+# conservative: a model that erred in any sample is represented as having
+# erred, rather than optimistic.
+_STATUS_PRIORITY = ["✗MA", "✗NF", "✗F", "✓", "·", "?"]
+
+
+def aggregate_samples(model_id: str, question: dict, samples_results, n_samples: int) -> dict:
+    """Collapse N per-sample verifications into one aggregated per-question record.
+
+    `samples_results` is a list of (answer_text, verification_dict). We compute:
+      * `counts`        — how many samples fell into each status,
+      * `majority`      — the most frequent status (tie-broken by _STATUS_PRIORITY),
+      * `_correct/_wrong/_nocite/_unverif` — pooled tallies used by build_leaderboard
+                          and build_domain_hvi (so HVI is averaged over all samples,
+                          much more stable than a single run),
+      * `detail`        — representative detail annotated with the sample split.
+    """
+    statuses = [v["status"] for _, v in samples_results]
+    counts: dict[str, int] = {}
+    for s in statuses:
+        counts[s] = counts.get(s, 0) + 1
+
+    max_c = max(counts.values())
+    tied = [s for s in counts if counts[s] == max_c]
+    majority = sorted(tied, key=lambda s: _STATUS_PRIORITY.index(s)
+                      if s in _STATUS_PRIORITY else 99)[0]
+
+    correct = counts.get("✓", 0)
+    wrong = sum(counts.get(s, 0) for s in HALLUCINATION_STATUSES)
+    nocite = counts.get("·", 0)
+    unverif = counts.get("?", 0)
+
+    # Representative answer & detail: prefer a sample whose status == majority.
+    rep_answer = next((a for a, v in samples_results if v["status"] == majority), samples_results[0][0])
+    rep_v = next((v for a, v in samples_results if v["status"] == majority), samples_results[0][1])
+    rep_citations = rep_v.get("citations", [])
+
+    if majority == "✓":
+        detail = f"{rep_v['detail']}（{correct}/{n_samples} 取样正确）"
+    elif majority in HALLUCINATION_STATUSES:
+        detail = f"{rep_v['detail']}（{counts.get(majority, 0)}/{n_samples} 取样错引）"
+    elif majority == "·":
+        detail = f"未识别到法条引注（{nocite}/{n_samples} 取样无引注）"
+    else:
+        detail = rep_v.get("detail", "无法判定")
+
+    return {
+        "qid": question["qid"],
+        "domain": question.get("domain", "未分类"),
+        "question": question["prompt"],
+        "model": model_id,
+        "status": majority,
+        "detail": detail,
+        "citations": rep_citations,
+        # internal tallies (stripped before writing verifications.jsonl)
+        "_correct": correct,
+        "_wrong": wrong,
+        "_nocite": nocite,
+        "_unverif": unverif,
+        "_counts": counts,
+    }
+
+
+def _augment_single_for_leaderboard(rec: dict):
+    """Backfill the internal tally fields for a single-sample (demo) record so
+    build_leaderboard / build_domain_hvi work uniformly."""
+    st = rec.get("status", "?")
+    rec["_correct"] = 1 if st == "✓" else 0
+    rec["_wrong"] = 1 if st in HALLUCINATION_STATUSES else 0
+    rec["_nocite"] = 1 if st == "·" else 0
+    rec["_unverif"] = 1 if st == "?" else 0
+    rec["_counts"] = {st: 1}
+
+
 # ----------------------------------------------------------------------------
 # Evaluation loop
 # ----------------------------------------------------------------------------
@@ -292,7 +371,7 @@ def load_json(path: Path):
         return json.load(f)
 
 
-def run_evaluation(eval_date: str, output_root: Path, demo: bool = False):
+def run_evaluation(eval_date: str, output_root: Path, demo: bool = False, samples: int = 3):
     models = load_json(CONFIG_DIR / "models.json")["models"]
     questions = load_json(CONFIG_DIR / "questions.json")["questions"]
 
@@ -306,7 +385,7 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False):
     answers_path = day_dir / "answers.jsonl"
     verifications_path = day_dir / "verifications.jsonl"
 
-    model_results = {}  # model_id -> list of verification records
+    model_results = {}  # model_id -> list of aggregated per-question records
     answer_records = []
 
     # ---- demo mode: reuse seeded verifications (no API calls) -------------
@@ -325,38 +404,43 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False):
                 if not line:
                     continue
                 r = json.loads(line)
+                _augment_single_for_leaderboard(r)
                 model_results.setdefault(r["model"], []).append(r)
         # write answers.jsonl placeholder only if missing (keep seed if present)
         if not answers_path.exists():
             with open(answers_path, "w", encoding="utf-8") as f:
                 f.write("")  # demo: answers not regenerated
         _finalize(output_root, model_results, eval_date, verifications_path)
-        return 
+        return
 
     for model in models:
         if not model.get("enabled", True):
             continue
-        print(f"[eval] model={model['id']}", flush=True)
+        print(f"[eval] model={model['id']} (sampling x{samples})", flush=True)
         verifs = []
         for q in questions:
-            record = {
-                "qid": q["qid"],
-                "domain": q.get("domain", "未分类"),
-                "question": q["prompt"],
-                "model": model["id"],
-            }
             api_key = os.environ.get(model["api_key_env"], "")
-            try:
-                answer = call_model(model, q["prompt"], api_key)
-            except Exception as e:
-                print(f"  [error] {model['id']} q{q['qid']}: {e}", flush=True)
-                answer = ""
-            time.sleep(0.5)  # polite rate limiting
-
-            v = verify_answer(verifier, q, answer)
-            record.update({"status": v["status"], "detail": v["detail"], "citations": v["citations"]})
-            answer_records.append({"model": model["id"], "qid": q["qid"], "answer": answer})
-            verifs.append(record)
+            samples_results = []  # list of (answer_text, verification_dict)
+            for s_idx in range(samples):
+                try:
+                    answer = call_model(model, q["prompt"], api_key)
+                except Exception as e:
+                    print(f"  [error] {model['id']} q{q['qid']} sample{s_idx+1}: {e}", flush=True)
+                    answer = ""
+                time.sleep(0.5)  # polite rate limiting between samples
+                v = verify_answer(verifier, q, answer)
+                samples_results.append((answer, v))
+            agg = aggregate_samples(model["id"], q, samples_results, samples)
+            answer_records.append({
+                "model": model["id"],
+                "qid": q["qid"],
+                "answer": next((a for a, v in samples_results if v["status"] == agg["status"]),
+                               samples_results[0][0]),
+                "answers": [a for a, _ in samples_results],
+                "n_samples": samples,
+                "counts": agg["_counts"],
+            })
+            verifs.append(agg)
         model_results[model["id"]] = verifs
 
     # Write answers.jsonl
@@ -380,7 +464,9 @@ def _finalize(output_root: Path, model_results: dict, eval_date: str, verificati
         all_verifs.extend(verifs)
     with open(verifications_path, "w", encoding="utf-8") as f:
         for r in all_verifs:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+            # strip internal sampling tallies; keep the matrix-facing fields
+            clean = {k: v for k, v in r.items() if not k.startswith("_")}
+            f.write(json.dumps(clean, ensure_ascii=False) + "\n")
 
     leaderboard = build_leaderboard(model_results)
     domain_hvi = build_domain_hvi(model_results)
@@ -407,23 +493,26 @@ def _finalize(output_root: Path, model_results: dict, eval_date: str, verificati
 def build_leaderboard(model_results: dict) -> list[dict]:
     rows = []
     for model_id, verifs in model_results.items():
-        denom = [v for v in verifs if v["status"] in {"✓", "✗MA", "✗NF", "✗F"}]
-        total = len(denom)
-        hallucinated = sum(1 for v in denom if v["status"] in HALLUCINATION_STATUSES)
-        correct = sum(1 for v in denom if v["status"] == "✓")
+        # Pooled across all samples: HVI is the fraction of citation-bearing
+        # samples that were wrong — this averages out run-to-run variance.
+        correct = sum(v.get("_correct", 0) for v in verifs)
+        wrong = sum(v.get("_wrong", 0) for v in verifs)
+        total = correct + wrong
+        # Citations KPI: number of questions whose majority verdict is a citation.
+        cited_questions = sum(1 for v in verifs if v["status"] in {"✓", "✗MA", "✗NF", "✗F"})
         if total == 0:
-            # Model cited nothing verifiable → "未作答"; never a false 0% best.
+            # Model cited nothing verifiable across all samples → "未作答".
             hvi = None
             crfi = None
             rank = None
         else:
-            hvi = round(hallucinated / total, 4)
+            hvi = round(wrong / total, 4)
             crfi = round(correct / total, 4)
             rank = 0
         rows.append({
             "model": model_id,
             "hvi": hvi,
-            "citations": total,
+            "citations": cited_questions,
             "crfi": crfi,
             "temporal": 0.0,  # populated by bench verifier in production
             "answered": len(verifs),
@@ -447,10 +536,10 @@ def build_domain_hvi(model_results: dict) -> dict:
             by_domain.setdefault(v["domain"], []).append(v)
         out[model_id] = {}
         for dom, vs in by_domain.items():
-            denom = [v for v in vs if v["status"] in {"✓", "✗MA", "✗NF", "✗F"}]
-            total = len(denom)
-            hall = sum(1 for v in denom if v["status"] in HALLUCINATION_STATUSES)
-            out[model_id][dom] = round(hall / total, 4) if total else None
+            correct = sum(v.get("_correct", 0) for v in vs)
+            wrong = sum(v.get("_wrong", 0) for v in vs)
+            total = correct + wrong
+            out[model_id][dom] = round(wrong / total, 4) if total else None
     return out
 
 
@@ -459,11 +548,12 @@ def main():
     ap.add_argument("--date", default=date_cls.today().isoformat(), help="evaluation date YYYY-MM-DD")
     ap.add_argument("--output", default=str(ROOT / "data"), help="data output root")
     ap.add_argument("--demo", action="store_true", help="demo mode: no API calls (seeded verifications required)")
+    ap.add_argument("--samples", type=int, default=3, help="samples per (model, question) for variance suppression (default 3)")
     args = ap.parse_args()
 
     output_root = Path(args.output)
     output_root.mkdir(parents=True, exist_ok=True)
-    run_evaluation(args.date, output_root, demo=args.demo)
+    run_evaluation(args.date, output_root, demo=args.demo, samples=args.samples)
 
 
 if __name__ == "__main__":

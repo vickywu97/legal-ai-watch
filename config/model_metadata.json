@@ -19,12 +19,5 @@
     "params": "—",
     "context": "128K",
     "release": "2024-06"
-  },
-  "Kimi-K2": {
-    "vendor": "Moonshot AI",
-    "version": "moonshot-v1-8k",
-    "params": "—",
-    "context": "8K",
-    "release": "2024-08"
   }
 }

@@ -1,6 +1,6 @@
 # 评测方法论 (METHODOLOGY)
 
-> 版本: v1.0 · 最后更新: 2026-08-12
+> 版本: v1.0 · 最后更新: 2026-08-13
 
 本文档说明 Legal AI Watch 如何衡量法律大模型的「法条引注幻觉率」。
 评测逻辑本身由 [`legal-hallucination-bench`](https://github.com/vickywu97/legal-hallucination-bench)
@@ -116,13 +116,42 @@
 只要模型引注命中其中任意一条即判 `✓`，并在审计明细中附上对应 `justification`
 以便追溯。匹配粒度统一到「法条名 + 条号」，忽略款/项差异（见 §4 与 run_eval.py）。
 
-## 8. 复现
+## 8. 多次取样抑制非确定性（方差控制）
+
+即便 `temperature=0`，主流大模型对同一道题的回答仍**非完全确定**（API 侧的
+采样/路由抖动、reasoning 路径变化等）。实测中，同一题隔轮重跑，模型可能从
+「命中引注」翻成「未作答」，或把某题从「错引」翻成「正确」，导致 HVI 跨轮波动、
+损害榜单可信度。
+
+**做法**：每题每模型取样 `N` 次（`--samples`，默认 3），对每次取样独立抽取引注并
+核验，得到 `N` 个 status。然后：
+
+- **逐题诊断矩阵**展示 `N` 次取样的**多数判定**（majority verdict）；若 `N` 次无严格
+  多数，按 `✗ > ✓ > · > ?` 的保守优先级取代表判定（对「幻觉监测」类榜单，宁可显示
+  模型曾出错，也不乐观化）。矩阵 cell 的 tip 标注该状态在 `N` 次取样中的占比，
+  如「命中预期引注 《民法典》第584条（3/3 取样一致）」或「（1/3 取样错引）」，
+  把方差**透明化**而非隐藏。
+- **HVI / CRFI / 分领域 HVI** 改为跨**全部**取样汇总：
+
+  ```
+  HVI = Σ(错引样本数) / Σ(含有效引注的样本数)      # 跨所有题 × 所有取样
+  ```
+
+  即把每题每模型的 1 个样本点，摊薄成 `题目数 × N` 个样本点（当前 10 题 × 3 模型 × 3
+  取样 = 90 个样本点），方差随样本量增大而显著收敛，HVI 跨轮稳定。
+
+- **引注数（KPI）** = 多数判定为「含引注」（✓ 或 ✗）的题数，保持 0–10 的直观口径。
+
+> 取舍：取样越多 HVI 越稳，但 API 调用量与耗时线性增长（每周定时任务默认 `N=3`；
+> 手动触发可通过 `samples` 输入调高，例如 `5` 以获得更平滑的曲线）。
+
+## 9. 复现
 
 ```bash
 git clone --recurse-submodules https://github.com/vickywu97/legal-ai-watch.git
 cd legal-ai-watch
 pip install -r requirements.txt
-export DEEPSEEK_API_KEY=...   # 等 4 个密钥
-python scripts/run_eval.py --date 2026-08-08 --output data/
+export DEEPSEEK_API_KEY=...   # 等 3 个密钥（Kimi 已退出评测池）
+python scripts/run_eval.py --date 2026-08-08 --output data/ --samples 3
 python scripts/generate_dashboard.py --data data/ --output dashboard/
 ```
