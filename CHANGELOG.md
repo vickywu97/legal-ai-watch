@@ -10,6 +10,12 @@ Each line follows: `YYYY-MM-DD · <scope> · <summary>`
 
 ---
 
+## 2026-08-13 · fix · 公司法旧条号等价引注（Q9/Q10 假阳性修复）
+- **问题**：GLM-4 在 Q9 引《公司法》第四十三条、Q10 引第一百七十七条，均为 2018 旧公司法条号，但实质与 2023 新法第66条（修改章程特别决议2/3）、第224条（减资债权人保护30日）完全相同；旧口径以「新法条号唯一正解」把它们记成 ✗MA，致 GLM HVI 虚高约 20 个百分点。
+- **修复**：仿 Q5 给 Q9、Q10 补 `acceptable_citations`（旧条号 + justification，论证条号版本差异而非幻觉），`verify_local` 的 `{expected} ∪ {acceptable}` 并集匹配自动放过。真错（如 Q8 引专利法第15条）不受影响，仍判 ✗MA。
+- 已本地验证：GLM 旧条号回答判 ✓，错引（Q9 第99条 / Q10 第50条）仍 ✗MA，无过度放行。
+- METHODOLOGY §7.3 新增「条号版本差异」等价类型。
+
 ## 2026-08-13 · methodology · 多次取样抑制非确定性 + Kimi 退出评测池
 - **多次取样方差控制**：每题每模型取样 N 次（默认 3，`--samples` 可调），逐题展示多数判定、矩阵 cell 标注取样占比；HVI/CRFI/分领域 HVI 改为跨全部取样汇总（错引样本数 ÷ 含引注样本数），把跨轮非确定性（实测同题隔轮 HVI 波动）摊薄，提升榜单可复现性。见 METHODOLOGY §8。
 - **Kimi-K2 退出评测池**：Moonshot API 持续 429 限流、难以获得稳定回答，于 `config/models.json` 置 `enabled:false`；`model_metadata.json` 同步移除。新一期历史模型列表仅含 DeepSeek-R1 / Qwen-Max / GLM-4。
