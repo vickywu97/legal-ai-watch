@@ -25,7 +25,9 @@ HVI = Hallucination of Verifiable Citations Index（引注幻觉率），即模�
 
 ### Q7. 模型厂商可以「刷榜」吗？
 评测以 `temperature=0` 固定作答，且题库与核验引擎独立于本榜单维护，厂商无法通过本仓库干预结果。
-若某模型版本更新导致分数变化，会在 CHANGELOG 与排行榜版本标注中体现。
+为抑制「同题隔轮回答不一致」带来的 HVI 波动，每题每模型取样 `N` 次（默认 3，详见方法论文档 §8），
+HVI / CRFI / 分领域 HVI 跨全部取样汇总，榜单可复现。若某模型版本更新导致分数变化，会在
+CHANGELOG 与排行榜版本标注中体现。
 
 ### Q8. 成本是多少？
 零成本。所有被测模型均有免费额度；GitHub Actions 与 GitHub Pages 均免费。详见主仓库 README。

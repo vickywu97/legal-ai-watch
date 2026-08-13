@@ -84,8 +84,8 @@ open dashboard/index.html
 export DEEPSEEK_API_KEY=...
 export ZHIPU_API_KEY=...
 export DASHSCOPE_API_KEY=...
-export MOONSHOT_API_KEY=...
-python scripts/run_eval.py --date 2026-08-08 --output data/
+export MOONSHOT_API_KEY=...   # Kimi 当前已退出评测池（config/models.json 置 enabled:false），此变量保留以备重新启用
+python scripts/run_eval.py --date 2026-08-08 --output data/ --samples 3
 python scripts/generate_dashboard.py --data data/ --output dashboard/
 ```
 
@@ -98,10 +98,9 @@ legal-ai-watch/
 ├── .github/workflows/        # 每周 & 手动评测 CI
 ├── config/                   # models.json / questions.json / secrets.example.yml
 ├── scripts/                  # run_eval / generate_dashboard / sync / social / seed
-├── data/                     # answers/, leaderboard_history.json, model_metadata.json
+├── data/                     # answers/, leaderboard_history.json（model_metadata.json 在 config/）
 ├── dashboard/                # 生成的静态站点（GitHub Pages 源）
-├── docs/                     # METHODOLOGY / FAQ / HOW_TO_ADD_MODEL
-└── archive/                  # 历史报告归档
+├── docs/                     # METHODOLOGY / FAQ / HOW_TO_ADD_MODEL / DEPLOY
 ```
 
 ---

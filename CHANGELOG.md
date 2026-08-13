@@ -10,6 +10,17 @@ Each line follows: `YYYY-MM-DD · <scope> · <summary>`
 
 ---
 
+## 2026-08-13 · docs · 全局一致性排查 + DEPLOY.md
+- **新增 docs/DEPLOY.md**：推送排错（SSH-over-443）、CI 架构（只发 gh-pages）、手动/每周触发、取样管线、等价引注闸门、本地预览、常见故障表、密钥清单，一页式运维手册。
+- **全局一致性修复（一次性，不再打补丁）**：
+  - 修正 `model_metadata.json` 位置文档错误：README 与 HOW_TO_ADD_MODEL 原写 `data/`，实际在 `config/`（Dashboard 读 config/ 并内联）。
+  - `seed_demo.py` 移除已退出的 Kimi，演示模型集与线上启用集（3 模型）对齐。
+  - `sync_questions.py` 新增本地策展保留：同步上游题库时按 qid 合并回 `acceptable_citations`/`verifiable`，避免无声覆盖我们手搓的等价引注论证（Q5/Q9/Q10）。
+  - `generate_dashboard.py` 标题「近 12 周 HVI 趋势」改为「HVI 趋势」（线上历史仅 2 周，避免误导）。
+  - FAQ Q7、METHODOLOGY §2 补多次取样交叉引用（对齐 §8）。
+  - README 移除不存在的 `archive/` 目录说明；`run_eval` 示例补 `--samples 3`；MOONSHOT 变量标注 Kimi 已退出。
+- 已本地非破坏性验证：seed 仅生成 3 模型/12 周；sync 合并后 acceptable_citations 保留。
+
 ## 2026-08-13 · fix · 公司法旧条号等价引注（Q9/Q10 假阳性修复）
 - **问题**：GLM-4 在 Q9 引《公司法》第四十三条、Q10 引第一百七十七条，均为 2018 旧公司法条号，但实质与 2023 新法第66条（修改章程特别决议2/3）、第224条（减资债权人保护30日）完全相同；旧口径以「新法条号唯一正解」把它们记成 ✗MA，致 GLM HVI 虚高约 20 个百分点。
 - **修复**：仿 Q5 给 Q9、Q10 补 `acceptable_citations`（旧条号 + justification，论证条号版本差异而非幻觉），`verify_local` 的 `{expected} ∪ {acceptable}` 并集匹配自动放过。真错（如 Q8 引专利法第15条）不受影响，仍判 ✗MA。

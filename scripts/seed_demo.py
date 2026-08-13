@@ -27,13 +27,12 @@ DATA = ROOT / "data"
 CONFIG = ROOT / "config"
 
 # ---- demo configuration -----------------------------------------------------
-MODELS = ["DeepSeek-R1", "Qwen-Max", "GLM-4", "Kimi-K2"]
+MODELS = ["DeepSeek-R1", "Qwen-Max", "GLM-4"]  # 与生产 config/models.json 的启用集保持一致（Kimi 已退出评测池）
 # base HVI at week 0 and week -11 (trend), plus per-domain offset
 MODEL_PROFILE = {
     "DeepSeek-R1": {"start": 0.58, "end": 0.50, "temporal": 0.12},
     "Qwen-Max":    {"start": 0.61, "end": 0.55, "temporal": 0.15},
     "GLM-4":       {"start": 0.66, "end": 0.62, "temporal": 0.18},
-    "Kimi-K2":     {"start": 0.73, "end": 0.70, "temporal": 0.22},
 }
 # domain difficulty multiplier applied to a model's base HVI
 DOMAIN_BIAS = {"民法": 0.95, "刑法": 0.55, "税法": 1.35, "专利": 0.80, "公司法": 1.10}
@@ -43,7 +42,6 @@ METADATA = {
     "DeepSeek-R1": {"vendor": "DeepSeek", "version": "R1 (2501)", "params": "671B MoE", "context": "64K", "release": "2025-01"},
     "Qwen-Max":    {"vendor": "Alibaba", "version": "qwen-max", "params": "—", "context": "32K", "release": "2024-09"},
     "GLM-4":       {"vendor": "Zhipu AI", "version": "glm-4", "params": "—", "context": "128K", "release": "2024-06"},
-    "Kimi-K2":     {"vendor": "Moonshot AI", "version": "moonshot-v1-8k", "params": "—", "context": "8K", "release": "2024-08"},
 }
 
 SEED = 20260808

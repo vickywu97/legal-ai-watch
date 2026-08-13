@@ -174,7 +174,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </section>
 
     <section class="panel">
-      <h2>近 12 周 HVI 趋势</h2>
+      <h2>HVI 趋势</h2>
       <div class="chart-box"><canvas id="trend-chart"></canvas></div>
     </section>
   </div>

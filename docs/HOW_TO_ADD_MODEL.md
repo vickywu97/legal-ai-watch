@@ -49,7 +49,7 @@
 
 ## 步骤 4：更新元数据（可选但推荐）
 
-在 `data/model_metadata.json` 补充厂商 / 版本 / 参数量 / 上下文窗口，
+在 `config/model_metadata.json` 补充厂商 / 版本 / 参数量 / 上下文窗口，
 Dashboard 排行榜会展示这些信息。
 
 ## 步骤 5：记录变更

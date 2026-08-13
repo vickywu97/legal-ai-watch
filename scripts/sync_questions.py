@@ -58,6 +58,38 @@ def load_remote_questions(url: str) -> dict:
     return json.loads(data)
 
 
+def _preserve_local_curation(upstream: dict, local_path: Path) -> dict:
+    """Merge watch-specific fields from the existing local questions.json into
+    the freshly synced upstream questions, keyed by qid.
+
+    The upstream bench file does NOT carry our repo-level curation
+    (e.g. `acceptable_citations` / `verifiable` added in this watch repo for the
+    equivalence-argument gate, Q5/Q9/Q10). Without this merge, a sync would
+    silently wipe those arguments and re-introduce the HVI false positives they
+    fix. Top-level `_comment` / `version` are also kept from local if upstream
+    omits them.
+    """
+    if not local_path.exists():
+        return upstream
+    try:
+        local = json.loads(local_path.read_text(encoding="utf-8"))
+    except Exception:
+        return upstream
+    local_by_qid = {q.get("qid"): q for q in local.get("questions", [])}
+    preserve_fields = ("acceptable_citations", "verifiable")
+    for q in upstream.get("questions", []):
+        lq = local_by_qid.get(q.get("qid"))
+        if not lq:
+            continue
+        for f in preserve_fields:
+            if f in lq and lq[f] not in (None, "", []):
+                q[f] = lq[f]
+    for meta in ("_comment", "version"):
+        if meta not in upstream and meta in local:
+            upstream[meta] = local[meta]
+    return upstream
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", default="submodule",
@@ -81,6 +113,9 @@ def main():
     backup = CONFIG / "questions.json.bak"
     if out.exists():
         shutil.copy(out, backup)
+    # Preserve this repo's curation (acceptable_citations / verifiable) that the
+    # upstream bench file does not carry — see _preserve_local_curation.
+    data = _preserve_local_curation(data, out)
     out.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     n = len(data.get("questions", []))
     print(f"[sync] wrote {n} questions to {out}" + (f" (backup: {backup})" if out.exists() else ""))
