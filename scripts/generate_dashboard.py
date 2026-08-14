@@ -275,7 +275,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 <footer class="site-footer">
   <div class="wrap">
-    <p>评测引擎: <a href="https://github.com/vickywu97/legal-hallucination-bench" target="_blank" rel="noopener">legal-hallucination-bench</a>
+    <p>评测引擎: <a href="https://github.com/vickywu97/legal-hallucination-bench" target="_blank" rel="noopener">legal-hallucination-bench（私有仓库 · 需授权访问）</a>
        · 方法论文档: <a href="https://github.com/vickywu97/legal-ai-watch/blob/main/docs/METHODOLOGY.md" target="_blank" rel="noopener">METHODOLOGY</a>
        · 数据下载: <a href="data/" target="_blank" rel="noopener">data/</a></p>
     <p class="copy">© 2026 Legal AI Watch · MIT License · Built by Vicky Wu</p>
