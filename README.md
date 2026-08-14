@@ -77,10 +77,10 @@ Legal AI Watch 用一套**可验证引注核验引擎**来回答这个问题，�
 
 | 仓库 | 职责 |
 |------|------|
-| [`legal-hallucination-bench`](https://github.com/vickywu97/legal-hallucination-bench) | 评测引擎、知识库、题库、评分逻辑 |
+| [`legal-hallucination-bench`](https://github.com/vickywu97/legal-hallucination-bench)（私有仓库，需授权访问） | 评测引擎、知识库、题库、评分逻辑 |
 | **`legal-ai-watch`（本仓库）** | 自动运行评测、生成 Dashboard、发布排行榜、运营 |
 
-本仓库作为 **git submodule** 引入 bench 引擎，只消费其稳定版本，不修改评测逻辑。
+本仓库通过 **git submodule** 引入 `legal-hallucination-bench` 作为上游引擎 / 知识库；核验引擎 [`scripts/verifier.py`](scripts/verifier.py) 为本仓库自带的官方方法学实现（详见其模块文档），与 submodule 中的引擎版本协同演进。
 
 ---
 
