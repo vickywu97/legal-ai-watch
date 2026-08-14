@@ -9,6 +9,8 @@
       "model": "deepseek-reasoner",
       "api_key_env": "DEEPSEEK_API_KEY",
       "context_window": 64000,
+      "max_tokens": 2048,
+      "min_interval_seconds": 1.0,
       "enabled": true
     },
     {
@@ -20,6 +22,8 @@
       "model": "qwen-max",
       "api_key_env": "DASHSCOPE_API_KEY",
       "context_window": 32768,
+      "max_tokens": 2048,
+      "min_interval_seconds": 1.0,
       "enabled": true
     },
     {
@@ -31,6 +35,8 @@
       "model": "glm-4",
       "api_key_env": "ZHIPU_API_KEY",
       "context_window": 128000,
+      "max_tokens": 2048,
+      "min_interval_seconds": 1.0,
       "enabled": true
     },
     {
@@ -42,8 +48,10 @@
       "model": "kimi-k2.6",
       "api_key_env": "MOONSHOT_API_KEY",
       "context_window": 8192,
+      "max_tokens": 2048,
+      "min_interval_seconds": 2.0,
       "enabled": false,
-      "disabled_reason": "Moonshot API 持续 429 限流, 难以获得稳定回答, 暂退出评测池"
+      "disabled_reason": "Moonshot API 持续 429 限流, 难以获得稳定回答, 暂退出评测池; 若恢复可在 models.json 置 enabled:true"
     }
   ]
 }

@@ -3,17 +3,19 @@
 generate_dashboard.py — 由 data/ 生成静态 Dashboard (dashboard/index.html)
 
 读取:
-  data/leaderboard_history.json   (排行榜历史, 趋势图 & 主表)
-  data/model_metadata.json        (模型厂商/版本等元数据)
+  data/leaderboard_history.json   (排行榜历史, 趋势图 & 主表 & 跨期对比)
+  data/model_metadata.json        (模型厂商/版本等元数据, 退回 config/)
   data/answers/<最新日期>/verifications.jsonl  (逐题诊断矩阵)
+  data/answers/<最新日期>/answers.jsonl        (逐题模型原话, 用于下钻)
 
 产出:
-  dashboard/index.html   内联数据 + 引入 style.css / dashboard.js / Chart.js(CDN)
+  dashboard/index.html   内联数据 + 引入 style.css / dashboard.js
+  dashboard/status.json  新鲜度元数据 (generated_at / data_date / 模型数 / 题数)
   dashboard/style.css
   dashboard/dashboard.js
 
 数据以内联 JSON (window.__WATCH__) 形式写入 HTML, 避免本地预览的 fetch/CORS 问题;
-GitHub Pages 与本地双击打开均可直接渲染。
+GitHub Pages 与本地双击打开均可直接渲染.
 
 Usage:
   python scripts/generate_dashboard.py --data data/ --output dashboard/
@@ -23,7 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
-from datetime import date as date_cls
+from datetime import date as date_cls, datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -38,12 +40,28 @@ def load_json(path: Path):
         return json.load(f)
 
 
-def find_latest_answers_dir(data_root: Path):
+def find_latest_answers_dir(data_root: Path, history: dict | None = None):
+    """Return the answers dir for the current eval.
+
+    Prefers the dir whose name matches the latest eval date recorded in
+    leaderboard_history.json, so a stale dir from an older manual run (e.g.
+    a pre-schema-change date) can never shadow the current evaluation.
+    Falls back to the lexicographically-latest dir when no match is found.
+    """
     answers_root = data_root / "answers"
     if not answers_root.exists():
         return None
     dirs = sorted([d for d in answers_root.iterdir() if d.is_dir()], reverse=True)
-    return dirs[0] if dirs else None
+    if not dirs:
+        return None
+    if history:
+        eval_dates = [h.get("date") for h in history.get("history", []) if h.get("date")]
+        if eval_dates:
+            latest_eval = eval_dates[-1]
+            for d in dirs:
+                if d.name == latest_eval:
+                    return d
+    return dirs[0]
 
 
 def build_matrix(latest_dir: Path | None):
@@ -77,24 +95,46 @@ def build_matrix(latest_dir: Path | None):
     return qs, sorted(models), matrix
 
 
+def build_answers(latest_dir: Path | None):
+    """Map 'qid|model' -> {answer, n, counts} for drill-down."""
+    out: dict = {}
+    if latest_dir is None:
+        return out
+    apath = latest_dir / "answers.jsonl"
+    if not apath.exists():
+        return out
+    with open(apath, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            r = json.loads(line)
+            key = f"{r['qid']}|{r['model']}"
+            out[key] = {
+                "answer": r.get("answer", ""),
+                "n": r.get("n_samples", 1),
+                "counts": r.get("counts", {}),
+            }
+    return out
+
+
 def generate(data_root: Path, out_dir: Path):
     history = load_json(data_root / "leaderboard_history.json") or {
         "updated_at": date_cls.today().isoformat(), "models": [], "domains": [], "history": []}
-    # Model vendor/version metadata lives in config/ (source), with a fallback
-    # to a data/-side copy for backward compatibility.
     metadata = (load_json(data_root / "model_metadata.json")
                 or load_json(ROOT / "config" / "model_metadata.json")
                 or {})
-    latest_dir = find_latest_answers_dir(data_root)
+    latest_dir = find_latest_answers_dir(data_root, history)
     questions, matrix_models, matrix = build_matrix(latest_dir)
+    answers = build_answers(latest_dir)
 
-    # Coalesce model ordering: prefer history.models, append any from matrix
     models = list(history.get("models", []))
     for m in matrix_models:
         if m not in models:
             models.append(m)
 
     payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": history.get("updated_at", date_cls.today().isoformat()),
         "models": models,
         "domains": history.get("domains", []),
@@ -106,6 +146,7 @@ def generate(data_root: Path, out_dir: Path):
             "data": matrix,
             "date": latest_dir.name if latest_dir else None,
         },
+        "answers": answers,
     }
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -114,6 +155,16 @@ def generate(data_root: Path, out_dir: Path):
 
     html = HTML_TEMPLATE.replace("/*__WATCH_DATA__*/", json.dumps(payload, ensure_ascii=False))
     (out_dir / "index.html").write_text(html, encoding="utf-8")
+
+    # Freshness metadata (consumed by the dashboard + by external freshness checks)
+    status = {
+        "generated_at": payload["generated_at"],
+        "data_date": payload["matrix"]["date"],
+        "models": len(models),
+        "questions": len(questions),
+        "history_weeks": len(payload["history"]),
+    }
+    (out_dir / "status.json").write_text(json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8")
 
     # Embed the eval data into the published dashboard so the site is fully
     # self-contained on gh-pages: audit/download links use relative paths and
@@ -151,7 +202,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <p class="tagline">中国法律大模型引注准确性实时监测 · 每周自动更新</p>
       </div>
     </div>
-    <p class="updated">最后更新: <span id="last-updated">—</span></p>
+    <p class="updated">数据截至: <span id="data-date">—</span> ·
+      生成于 <span id="gen-date">—</span>
+      <span id="stale-warn" class="stale-warn" style="display:none">⚠ 数据已超过 14 天未更新，可能已失效</span>
+    </p>
   </div>
 </header>
 
@@ -165,12 +219,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <table id="leaderboard">
           <thead><tr>
             <th>排名</th><th>模型</th><th class="num">HVI</th>
-            <th class="num">引注数</th><th class="num">CRFI</th>
-            <th class="num">时序幻觉</th><th>厂商 / 版本</th>
+            <th class="num">CRFI</th><th class="num">覆盖率</th>
+            <th class="num">综合正确</th><th class="num">时序幻觉</th>
+            <th class="num">API错误</th><th>厂商 / 版本</th>
           </tr></thead>
           <tbody></tbody>
         </table>
       </div>
+      <p class="note">HVI=错引/(正确+错引)；覆盖率=(正确+错引)/(全部)；综合正确=正确/全部（逃避引注被计为不正确）；时序幻觉=引用已废止旧法比例；API错误=接口调用失败次数（基础设施问题，单列，不混入模型行为）。</p>
     </section>
 
     <section class="panel">
@@ -178,6 +234,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <div class="chart-box"><canvas id="trend-chart"></canvas></div>
     </section>
   </div>
+
+  <section class="panel">
+    <h2>与上期对比 <span class="sub" id="diff-sub"></span></h2>
+    <div id="diff-view" class="diff-view"></div>
+  </section>
 
   <section class="panel">
     <h2>分领域引注幻觉率 <span class="sub">(最新一期)</span></h2>
@@ -188,12 +249,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <h2>逐题诊断矩阵 <span class="sub" id="matrix-date"></span></h2>
     <p class="legend">
       <span class="lg ok">✓ 正确</span>
-      <span class="lg bad">✗MA 编造法条</span>
+      <span class="lg bad">✗MA 编造/错引法条</span>
       <span class="lg bad">✗NF 内容不符</span>
       <span class="lg bad">✗F 事实错误</span>
+      <span class="lg bad">✗T 时序幻觉(引已废止旧法)</span>
+      <span class="lg err">✗ERR 接口失败</span>
       <span class="lg unk">? 无法判定</span>
       <span class="lg na">· 未作答</span>
     </p>
+    <p class="legend">点击单元格可展开查看该模型对此题的<strong>原始回答</strong>。</p>
     <div class="table-scroll"><div id="matrix"></div></div>
   </section>
 
@@ -222,7 +286,7 @@ CSS = """
 :root{
   --bg:#f5f7fa; --panel:#ffffff; --ink:#1f2933; --muted:#647488;
   --line:#e3e8ef; --accent:#2563eb; --accent2:#0f766e;
-  --ok:#16a34a; --bad:#dc2626; --unk:#9ca3af; --na:#cbd5e1;
+  --ok:#16a34a; --bad:#dc2626; --unk:#9ca3af; --na:#cbd5e1; --err:#7c3aed;
   --shadow:0 1px 3px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.04);
 }
 *{box-sizing:border-box}
@@ -238,6 +302,7 @@ a:hover{text-decoration:underline}
 .brand h1{margin:0;font-size:24px;letter-spacing:.3px}
 .tagline{margin:2px 0 0;color:#c7d2fe;font-size:13px}
 .updated{margin:10px 0 0;font-size:13px;color:#cbd5e1}
+.stale-warn{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:600}
 .site-header .wrap{display:flex;flex-direction:column}
 
 main{padding:24px 0 40px}
@@ -251,6 +316,7 @@ main{padding:24px 0 40px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow);margin-bottom:18px}
 .panel h2{margin:0 0 14px;font-size:17px}
 .panel h2 .sub{font-size:12px;color:var(--muted);font-weight:400}
+.note{font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.5}
 
 .table-scroll{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:14px}
@@ -265,19 +331,30 @@ tbody tr:hover{background:#f8fafc}
 
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;margin:0 0 12px;color:var(--muted)}
 .lg{padding:2px 8px;border-radius:6px;background:#f1f5f9}
-.lg.ok{color:var(--ok)} .lg.bad{color:var(--bad)} .lg.unk{color:var(--unk)} .lg.na{color:#94a3b8}
+.lg.ok{color:var(--ok)} .lg.bad{color:var(--bad)} .lg.unk{color:var(--unk)} .lg.na{color:#94a3b8} .lg.err{color:var(--err)}
 
 #matrix{display:inline-block;min-width:100%}
 table.matrix{border-collapse:collapse;font-size:13px}
 table.matrix th,table.matrix td{border:1px solid var(--line);padding:6px 8px;text-align:center}
 table.matrix th.q{text-align:left;min-width:220px;max-width:340px;white-space:normal;color:var(--ink);font-weight:500}
 table.matrix thead th{background:#f8fafc;position:sticky;top:0}
-.cell{font-weight:700;border-radius:4px}
+.cell{font-weight:700;border-radius:4px;cursor:pointer;display:block;padding:4px 6px}
 .cell.ok{background:#dcfce7;color:var(--ok)}
 .cell.bad{background:#fee2e2;color:var(--bad)}
+.cell.temporal{background:#fae8ff;color:#a21caf}
+.cell.err{background:#ede9fe;color:var(--err)}
 .cell.unk{background:#f3f4f6;color:var(--unk)}
 .cell.na{background:#f1f5f9;color:#94a3b8}
 .cell .tip{display:block;font-weight:400;font-size:10px;color:var(--muted);margin-top:2px;max-width:160px;white-space:normal}
+.ans{font-size:12px;color:var(--ink);background:#f8fafc;border:1px solid var(--line);border-radius:6px;padding:8px;margin-top:4px;text-align:left;white-space:normal;line-height:1.5}
+.ans.collapsed{display:none}
+
+.diff-view{display:flex;flex-direction:column;gap:8px}
+.diff-row{display:flex;align-items:center;gap:12px;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:8px}
+.diff-model{font-weight:600;min-width:120px}
+.diff-bar{flex:1;height:8px;background:#eef2f7;border-radius:4px;overflow:hidden}
+.diff-bar > span{display:block;height:100%}
+.diff-delta{font-weight:700;min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
 
 .audit-list{margin:0;padding-left:18px;font-size:14px}
 .audit-list li{margin:6px 0}
@@ -298,36 +375,51 @@ JS = """
   const HISTORY = W.history || [];
   const META = W.metadata || {};
   const DOMAINS = W.domains || [];
+  const ANSWERS = W.answers || {};
 
-  // stable color per model
   const PALETTE = ["#2563eb","#0f766e","#d97706","#db2777","#7c3aed","#0891b2","#ca8a04","#16a34a"];
   const colorFor = (i) => PALETTE[i % PALETTE.length];
 
   function pct(x){ return ((x==null?0:x)*100).toFixed(0) + "%"; }
-  function hviColor(h){ // red high, green low
+  function num(x, d=0){ return x==null ? "—" : (d? x.toFixed(d) : x); }
+  function hviColor(h){
+    if (h == null) return "#94a3b8";
     if (h <= 0.15) return "#16a34a";
     if (h <= 0.35) return "#d97706";
     if (h <= 0.55) return "#ea580c";
     return "#dc2626";
   }
+  function statusClass(st){
+    if (st === "✓") return "ok";
+    if (st === "✗ERR") return "err";
+    if (st === "✗T") return "temporal";
+    if (["?","·"].includes(st)) return st === "·" ? "na" : "unk";
+    return "bad"; // ✗MA / ✗NF / ✗F
+  }
 
-  // ---- header ----
-  document.getElementById("last-updated").textContent = W.updated_at || "—";
+  // ---- header / freshness ----
+  const dataDate = W.matrix && W.matrix.date ? W.matrix.date : (HISTORY.length ? HISTORY[HISTORY.length-1].date : null);
+  document.getElementById("data-date").textContent = dataDate || "—";
+  document.getElementById("gen-date").textContent = (W.generated_at || "").slice(0,10) || "—";
+  if (dataDate) {
+    const days = Math.floor((Date.now() - new Date(dataDate).getTime()) / 86400000);
+    if (days > 14) document.getElementById("stale-warn").style.display = "inline-block";
+  }
 
   // ---- KPI cards (latest week) ----
   const latest = HISTORY.length ? HISTORY[HISTORY.length - 1] : null;
   const kpiBox = document.getElementById("kpi-cards");
   if (latest) {
     const allRows = latest.leaderboard || [];
-    const lb = allRows.filter(r => r.hvi != null);   // ranked (answered) models only
-    const best = lb[0];
-    const worst = lb[lb.length - 1];
+    const lb = allRows.filter(r => r.hvi != null);
+    const best = lb[0], worst = lb[lb.length - 1];
     const avg = lb.length ? lb.reduce((s,r)=>s+r.hvi,0)/lb.length : 0;
+    const avgCov = lb.length ? lb.reduce((s,r)=>s+(r.coverage||0),0)/lb.length : 0;
     const cards = [
       {label:"参评模型", value: lb.length, sub:"本周活跃"},
       {label:"最低 HVI (最佳)", value: best?pct(best.hvi):"—", sub: best?best.model:"—"},
       {label:"最高 HVI (最差)", value: worst?pct(worst.hvi):"—", sub: worst?worst.model:"—"},
-      {label:"平均 HVI", value: pct(avg), sub:"全模型均值"},
+      {label:"平均 HVI / 覆盖率", value: pct(avg), sub:"覆盖率 "+pct(avgCov)},
     ];
     kpiBox.innerHTML = cards.map(c=>`<div class="kpi"><div class="k-label">${c.label}</div><div class="k-value">${c.value}</div><div class="k-sub">${c.sub}</div></div>`).join("");
   }
@@ -346,12 +438,38 @@ JS = """
         <td><span class="rank-badge">${rankCell}</span></td>
         <td><strong>${r.model}</strong></td>
         <td class="num">${hviCell}</td>
-        <td class="num">${r.citations}</td>
-        <td class="num">${pct(r.crfi||0)}</td>
-        <td class="num">${pct(r.temporal||0)}</td>
+        <td class="num">${num(r.crfi!=null?pct(r.crfi):null)}</td>
+        <td class="num">${num(r.coverage!=null?pct(r.coverage):null)}</td>
+        <td class="num">${num(r.integrity!=null?pct(r.integrity):null)}</td>
+        <td class="num">${num(r.temporal!=null?pct(r.temporal):null)}</td>
+        <td class="num">${r.api_errors||0}</td>
         <td>${mv}</td>
       </tr>`;
     }).join("");
+  }
+
+  // ---- diff vs previous week ----
+  const diffEl = document.getElementById("diff-view");
+  if (HISTORY.length >= 2) {
+    const cur = HISTORY[HISTORY.length-1], prev = HISTORY[HISTORY.length-2];
+    document.getElementById("diff-sub").textContent = `( ${prev.date} → ${cur.date} )`;
+    const prevMap = {}; (prev.leaderboard||[]).forEach(r=> prevMap[r.model]=r);
+    const rows = (cur.leaderboard||[]).filter(r=>r.hvi!=null && prevMap[r.model] && prevMap[r.model].hvi!=null)
+      .map(r=>{
+        const d = (r.hvi - prevMap[r.model].hvi) * 100; // percentage points
+        const up = d > 0.5, down = d < -0.5;
+        const color = up ? "#dc2626" : down ? "#16a34a" : "#94a3b8";
+        const arrow = up ? "▲" : down ? "▼" : "—";
+        const w = Math.min(100, Math.abs(d)*4);
+        return `<div class="diff-row">
+          <span class="diff-model">${r.model}</span>
+          <span class="diff-bar"><span style="width:${w}%;background:${color}"></span></span>
+          <span class="diff-delta" style="color:${color}">${arrow} ${Math.abs(d).toFixed(1)}pp</span>
+        </div>`;
+      });
+    diffEl.innerHTML = rows.length ? rows.join("") : '<p style="color:#647488">无可对比数据。</p>';
+  } else if (diffEl) {
+    diffEl.innerHTML = '<p style="color:#647488">需至少两期数据方可对比。</p>';
   }
 
   // ---- trend chart ----
@@ -393,7 +511,7 @@ JS = """
     });
   }
 
-  // ---- matrix ----
+  // ---- matrix (with answer drill-down) ----
   const M = W.matrix || {};
   const mDate = document.getElementById("matrix-date");
   if (mDate) mDate.textContent = M.date ? "( "+M.date+" )" : "";
@@ -410,9 +528,13 @@ JS = """
       mm.forEach(m=>{
         const cell = (md[q.qid]||{})[m] || {status:"?"};
         const st = cell.status;
-        const cls = ["✓"].includes(st)?"ok":["?","·"].includes(st)?(st==="·"?"na":"unk"):"bad";
+        const cls = statusClass(st);
         const tip = cell.detail ? `<span class="tip">${cell.detail}</span>` : "";
-        html += `<td><span class="cell ${cls}">${st}</span>${tip}</td>`;
+        const akey = q.qid + "|" + m;
+        const ansObj = ANSWERS[akey];
+        const ansHtml = ansObj && ansObj.answer
+          ? `<div class="ans collapsed" id="ans-${akey}">${ansObj.answer.replace(/</g,"&lt;")}</div>` : "";
+        html += `<td><span class="cell ${cls}" onclick="document.getElementById('ans-${akey}').classList.toggle('collapsed')">${st}</span>${tip}${ansHtml}</td>`;
       });
       html += "</tr>";
     });

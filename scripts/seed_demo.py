@@ -35,7 +35,8 @@ MODEL_PROFILE = {
     "GLM-4":       {"start": 0.66, "end": 0.62, "temporal": 0.18},
 }
 # domain difficulty multiplier applied to a model's base HVI
-DOMAIN_BIAS = {"民法": 0.95, "刑法": 0.55, "税法": 1.35, "专利": 0.80, "公司法": 1.10}
+DOMAIN_BIAS = {"民法": 0.95, "刑法": 0.55, "税法": 1.35, "专利": 0.80,
+               "公司法": 1.10, "数据合规": 1.20, "竞争法": 0.90}
 CITATIONS_RANGE = (38, 50)
 
 METADATA = {

@@ -1,11 +1,12 @@
 {
-  "_comment": "Sample question bank. In production this file is synced from legal-hallucination-bench via scripts/sync_questions.py. Each question probes a verifiable statute citation.",
-  "version": "1.0",
+  "_comment": "评测题库. 每题含 zh/en 双语 prompt, expected_citation 均为现行有效法条(最新修正版). 跨版本/跨法等价关系统一在 config/statute_equivalence.json 维护, 本题仅保留个别需带论证的一次性 acceptable_citations. 时序陷阱题(expected 为现行法, 模型若引已废止旧法将被判 ✗T)用于检验时序幻觉.",
+  "version": "2026-08-14",
   "questions": [
     {
       "qid": 1,
       "domain": "民法",
       "prompt": "买方违约，卖方可否请求赔偿合同履行后可以获得的利益？请引用具体法条。",
+      "prompt_en": "If the buyer breaches, may the seller claim damages for the benefit obtainable after performance? Cite the specific provision.",
       "expected_citation": "《民法典》第584条",
       "verifiable": true
     },
@@ -13,6 +14,7 @@
       "qid": 2,
       "domain": "民法",
       "prompt": "格式条款提供者未尽提示说明义务，该条款效力如何？请引用具体法条。",
+      "prompt_en": "If the provider of a standard clause fails to give prominent notice or explanation, what is the clause's validity? Cite the specific provision.",
       "expected_citation": "《民法典》第496条",
       "verifiable": true
     },
@@ -20,6 +22,7 @@
       "qid": 3,
       "domain": "刑法",
       "prompt": "盗窃罪的追诉时效是多久？请引用具体法条并说明计算依据。",
+      "prompt_en": "What is the prescription period for prosecuting theft? Cite the specific provision and its basis.",
       "expected_citation": "《刑法》第87条",
       "verifiable": true
     },
@@ -27,6 +30,7 @@
       "qid": 4,
       "domain": "刑法",
       "prompt": "正当防卫明显超过必要限度造成重大损害的，应如何处罚？请引用具体法条。",
+      "prompt_en": "How should excessive self-defense causing major harm be punished? Cite the specific provision.",
       "expected_citation": "《刑法》第20条第2款",
       "verifiable": true
     },
@@ -34,6 +38,7 @@
       "qid": 5,
       "domain": "税法",
       "prompt": "增值税一般纳税人的进项税额哪些不得从销项税额中抵扣？请引用具体法条。",
+      "prompt_en": "Which input VAT of general VAT taxpayers may NOT be credited against output tax? Cite the specific provision.",
       "expected_citation": "《增值税暂行条例》第10条",
       "acceptable_citations": [
         {
@@ -47,6 +52,7 @@
       "qid": 6,
       "domain": "税法",
       "prompt": "居民个人综合所得的计算中，专项附加扣除包含哪几项？请引用具体法条。",
+      "prompt_en": "Which items are included in the special additional deductions for comprehensive income of resident individuals? Cite the specific provision.",
       "expected_citation": "《个人所得税法》第6条",
       "verifiable": true
     },
@@ -54,6 +60,7 @@
       "qid": 7,
       "domain": "专利",
       "prompt": "授予专利权的外观设计应当具备哪些条件？请引用具体法条。",
+      "prompt_en": "What conditions must an industrial-design patent meet to be granted? Cite the specific provision.",
       "expected_citation": "《专利法》第23条第1款",
       "verifiable": true
     },
@@ -61,6 +68,7 @@
       "qid": 8,
       "domain": "专利",
       "prompt": "发明专利申请公布后、授权前，申请人可否请求实施其发明的单位或个人支付适当费用？请引用具体法条。",
+      "prompt_en": "After publication but before grant of an invention patent application, may the applicant claim reasonable fees from those exploiting the invention? Cite the specific provision.",
       "expected_citation": "《专利法》第13条",
       "verifiable": true
     },
@@ -68,6 +76,7 @@
       "qid": 9,
       "domain": "公司法",
       "prompt": "有限责任公司股东会作出修改公司章程的决议，须经多少表决权通过？请引用具体法条。",
+      "prompt_en": "A resolution to amend the articles of a limited-liability company requires what voting threshold? Cite the specific provision.",
       "expected_citation": "《公司法》第66条",
       "acceptable_citations": [
         {
@@ -81,6 +90,7 @@
       "qid": 10,
       "domain": "公司法",
       "prompt": "公司减资时，债权人自接到通知书之日起多少日内有权要求公司清偿债务或提供担保？请引用具体法条。",
+      "prompt_en": "Upon capital reduction, within how many days of receiving the notice may a creditor demand repayment or security? Cite the specific provision.",
       "expected_citation": "《公司法》第224条",
       "acceptable_citations": [
         {
@@ -88,6 +98,169 @@
           "justification": "2018 公司法（修订前）第一百七十七条与 2023 公司法第二百二十四条规制对象完全相同：均规定公司减资时债权人自接到通知书之日起三十日内有权要求清偿债务或提供担保。模型引旧条号但实质正确，属条号版本差异而非幻觉，按等价引注放过。"
         }
       ],
+      "verifiable": true
+    },
+    {
+      "qid": 11,
+      "domain": "民法",
+      "prompt": "因正当防卫造成损害的，是否承担民事责任？请引用具体法条。",
+      "prompt_en": "Is civil liability borne for damage caused by justifiable defense? Cite the specific provision.",
+      "expected_citation": "《民法典》第181条",
+      "verifiable": true
+    },
+    {
+      "qid": 12,
+      "domain": "民法",
+      "prompt": "限制民事行为能力人的年龄界限是多少？请引用具体法条。",
+      "prompt_en": "What is the age threshold for a person with limited civil capacity? Cite the specific provision.",
+      "expected_citation": "《民法典》第19条",
+      "verifiable": true,
+      "temporal_trap": true
+    },
+    {
+      "qid": 13,
+      "domain": "民法",
+      "prompt": "不动产物权的设立、变更、转让和消灭，自何时发生效力？请引用具体法条。",
+      "prompt_en": "When does a real right in immovable property take effect? Cite the specific provision.",
+      "expected_citation": "《民法典》第214条",
+      "verifiable": true
+    },
+    {
+      "qid": 14,
+      "domain": "民法",
+      "prompt": "赠与人在何种情形下可以撤销赠与？请引用具体法条。",
+      "prompt_en": "Under what circumstance may a donor revoke a gift? Cite the specific provision.",
+      "expected_citation": "《民法典》第658条",
+      "verifiable": true
+    },
+    {
+      "qid": 15,
+      "domain": "刑法",
+      "prompt": "完全刑事责任年龄是多少周岁？请引用具体法条。",
+      "prompt_en": "At what age does full criminal responsibility begin? Cite the specific provision.",
+      "expected_citation": "《刑法》第17条",
+      "verifiable": true
+    },
+    {
+      "qid": 16,
+      "domain": "刑法",
+      "prompt": "死刑适用对象有何限制？请引用具体法条。",
+      "prompt_en": "What restrictions apply to the application of the death penalty? Cite the specific provision.",
+      "expected_citation": "《刑法》第49条",
+      "verifiable": true
+    },
+    {
+      "qid": 17,
+      "domain": "民法",
+      "prompt": "一方以欺诈手段使对方在违背真实意思的情况下订立的合同，受损害方有何救济？请引用具体法条。",
+      "prompt_en": "If one party induces a contract by fraud, what remedy does the aggrieved party have? Cite the specific provision.",
+      "expected_citation": "《民法典》第148条",
+      "verifiable": true,
+      "temporal_trap": true
+    },
+    {
+      "qid": 18,
+      "domain": "民法",
+      "prompt": "向人民法院请求保护民事权利的诉讼时效期间为几年？请引用具体法条。",
+      "prompt_en": "What is the limitation period for civil claims? Cite the specific provision.",
+      "expected_citation": "《民法典》第188条",
+      "verifiable": true,
+      "temporal_trap": true
+    },
+    {
+      "qid": 19,
+      "domain": "税法",
+      "prompt": "居民个人取得综合所得，应如何计算并办理汇算清缴？请引用具体法条。",
+      "prompt_en": "How is the annual reconciliation of comprehensive income for resident individuals handled? Cite the specific provision.",
+      "expected_citation": "《个人所得税法》第11条",
+      "verifiable": true
+    },
+    {
+      "qid": 20,
+      "domain": "专利",
+      "prompt": "发明专利、实用新型专利、外观设计专利的保护期限各为多少年？请引用具体法条。",
+      "prompt_en": "What are the terms of protection for invention, utility-model, and design patents? Cite the specific provision.",
+      "expected_citation": "《专利法》第42条",
+      "verifiable": true
+    },
+    {
+      "qid": 21,
+      "domain": "专利",
+      "prompt": "侵犯专利权的赔偿数额如何确定？请引用具体法条。",
+      "prompt_en": "How is damages for patent infringement determined? Cite the specific provision.",
+      "expected_citation": "《专利法》第71条",
+      "verifiable": true
+    },
+    {
+      "qid": 22,
+      "domain": "公司法",
+      "prompt": "有限责任公司的股东有权查阅哪些公司文件？请引用具体法条。",
+      "prompt_en": "What company documents may a shareholder of an LLC inspect? Cite the specific provision.",
+      "expected_citation": "《公司法》第57条",
+      "verifiable": true
+    },
+    {
+      "qid": 23,
+      "domain": "公司法",
+      "prompt": "公司的法定代表人由谁担任？请引用具体法条。",
+      "prompt_en": "Who acts as the legal representative of a company? Cite the specific provision.",
+      "expected_citation": "《公司法》第10条",
+      "verifiable": true
+    },
+    {
+      "qid": 24,
+      "domain": "数据合规",
+      "prompt": "个人信息处理者向境外提供个人信息，应满足什么条件？请引用具体法条。",
+      "prompt_en": "What conditions must a personal-information processor meet to transfer data abroad? Cite the specific provision.",
+      "expected_citation": "《个人信息保护法》第38条",
+      "verifiable": true
+    },
+    {
+      "qid": 25,
+      "domain": "数据合规",
+      "prompt": "个人信息处理者负有哪些定期合规义务？请引用具体法条。",
+      "prompt_en": "What periodic compliance obligations does a personal-information processor have? Cite the specific provision.",
+      "expected_citation": "《个人信息保护法》第54条",
+      "verifiable": true
+    },
+    {
+      "qid": 26,
+      "domain": "数据合规",
+      "prompt": "重要数据的处理者负有哪些安全保护义务？请引用具体法条。",
+      "prompt_en": "What security obligations do important-data processors bear? Cite the specific provision.",
+      "expected_citation": "《数据安全法》第27条",
+      "verifiable": true
+    },
+    {
+      "qid": 27,
+      "domain": "竞争法",
+      "prompt": "经营者擅自使用与他人有一定影响的商品名称、包装、装潢等相同或者近似的标识，属于何种不正当竞争行为？请引用具体法条。",
+      "prompt_en": "What unfair-competition act is it to use another's influential trade name, packaging, or decoration? Cite the specific provision.",
+      "expected_citation": "《反不正当竞争法》第6条",
+      "verifiable": true
+    },
+    {
+      "qid": 28,
+      "domain": "民法",
+      "prompt": "商业广告等在合同法上属于要约还是要约邀请？请引用具体法条。",
+      "prompt_en": "Are commercial advertisements an offer or an invitation to offer? Cite the specific provision.",
+      "expected_citation": "《民法典》第473条",
+      "verifiable": true
+    },
+    {
+      "qid": 29,
+      "domain": "刑法",
+      "prompt": "单位能否成为犯罪主体？请引用具体法条。",
+      "prompt_en": "Can a unit be a subject of crime? Cite the specific provision.",
+      "expected_citation": "《刑法》第30条",
+      "verifiable": true
+    },
+    {
+      "qid": 30,
+      "domain": "刑法",
+      "prompt": "对于被判处拘役、三年以下有期徒刑的犯罪分子，适用缓刑需满足哪些条件？请引用具体法条。",
+      "prompt_en": "What conditions are required for a suspended sentence? Cite the specific provision.",
+      "expected_citation": "《刑法》第72条",
       "verifiable": true
     }
   ]

@@ -3,296 +3,182 @@
 run_eval.py — Legal AI Watch 主评测脚本
 
 流程: 对 config/models.json 中的每个启用模型, 调用其 OpenAI 兼容聊天接口,
-     抽取回答中的法条引注, 使用核验引擎(legal-hallucination-bench, 若以
-     submodule 引入) 或本地兜底核验器逐条判定, 产出:
+     抽取回答中的法条引注, 使用**本地确定性核验引擎** (scripts/verifier.py,
+     官方方法学, 见 docs/METHODOLOGY.md §7) 逐条判定, 产出:
         data/answers/YYYY-MM-DD/answers.jsonl
         data/answers/YYYY-MM-DD/verifications.jsonl
         data/answers/YYYY-MM-DD/leaderboard.json
      并将本轮排行榜追加写入 data/leaderboard_history.json.
 
 设计原则:
-  - 与 bench 解耦: 若 bench 以可导入包形式提供 verify(), 优先委托其核验;
-    否则使用本文件的本地核验器 (verify_local). 当前 bench 仓库尚未打包为可导入
-    模块, 故线上实际运行的即是 verify_local —— 已对法条名/条号做归一化, 并对
-    "未作答"/"不可验证"题目做诚实处理, 不应再出现把正确全称引注误判为幻觉、
-    或把零引注模型误标为最佳的情况.
-  - 零外部状态: 所有产物均为文件, 可复现.
-  - 抑制非确定性: 即便 temperature=0, 各模型回答仍非完全确定 (实测同题跨轮 HVI 波动).
-    故每题每模型取样 N 次 (--samples, 默认 3), 逐题取*多数判定*作为矩阵展示,
-    HVI/CRFI/分领域 HVI 则跨*全部*取样汇总 (错引样本数 / 含引注样本数), 将方差摊薄,
-    使榜单可复现. 矩阵 cell 的 tip 标注 "k/n 取样正确/错引" 以透明化方差.
+  - 核验质量=产品本身: 采用确定性、离线、可审计的 verifier, 不再依赖沉默失败的
+    "bench 兜底". 引注先归一化到 canonical 法条 provision (跨版本/跨法等价), 再比对.
+  - 指标诚实:
+      * HVI  = 错引 / (正确 + 错引)             —— 一旦引注, 多大概率错 (纯幻觉率)
+      * CRFI = 正确 / (正确 + 错引)             —— 引注正确率
+      * Coverage = (正确+错引) / (正确+错引+未引注) —— 引注纪律/参与度
+      * Integrity = 正确 / (正确+错引+未引注)   —— 综合正确率, 逃避引注被计为不正确
+      * Temporal = 时序幻觉 / (正确+错引+时序幻觉) —— 引用已废止旧法的比例
+      * api_errors                              —— 接口调用失败次数 (基础设施问题, 单列, 不混入模型行为)
+    "未引注"不再被悄悄豁免: 它拉低 Coverage/Integrity, 在榜单上可见.
+  - 抑制非确定性: 每题每模型取样 N 次 (--samples, 默认 3), 矩阵取多数判定,
+    HVI/CRFI/分域 HVI/时序 跨全部取样汇总, 摊薄方差. cell 标注 "k/n 取样" 透明化.
+  - 健壮性: 429/5xx/网络抖动可重试并尊重 Retry-After; 401/403/404 快速失败;
+    接口彻底失败记为 ✗ERR (区别于"未引注"), 不在 HVI 中冒充模型行为.
 
 Usage:
-  python scripts/run_eval.py --date 2026-08-08 --output data/
-  python scripts/run_eval.py --date 2026-08-08 --output data/ --demo   # 不调 API, 用 seeded 数据
+  python scripts/run_eval.py --date 2026-08-14 --output data/
+  python scripts/run_eval.py --date 2026-08-14 --output data/ --locale en
+  python scripts/run_eval.py --demo   # 不调 API, 用 seeded 数据重算
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
-import re
 import sys
 import time
 from datetime import date as date_cls
 from pathlib import Path
 
+from verifier import (
+    Equivalence,
+    HALLUCINATION_STATUSES,
+    extract_citations,
+    verify as verify_fn,
+)
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 CONFIG_DIR = ROOT / "config"
+PROMPTS_PATH = CONFIG_DIR / "prompts.json"
+EQUIV_PATH = CONFIG_DIR / "statute_equivalence.json"
 
-# ----------------------------------------------------------------------------
-# Citation extraction
-# ----------------------------------------------------------------------------
-# Matches Chinese statute citations like: 《民法典》第584条 / 《刑法》第20条第2款
-CITATION_RE = re.compile(r"《([^》]+)》\s*第\s*([0-9零一二三四五六七八九十百千]+)\s*条(?:\s*第\s*([0-9零一二三四五六七八九十百千]+)\s*款)?")
 
-# Statuses that count as hallucination
-HALLUCINATION_STATUSES = {"✗MA", "✗NF", "✗F"}
+class ModelCallError(RuntimeError):
+    """Raised when a model API call fails after all retries (or fails fast)."""
 
 
 # ----------------------------------------------------------------------------
-# Citation normalization (law-name canonicalization)
+# Model API (OpenAI-compatible) with principled retry / backoff
 # ----------------------------------------------------------------------------
-# Models frequently cite the full official title (《中华人民共和国民法典》)
-# while expected_citation uses the short name (《民法典》). These denote the SAME
-# law, so we canonicalize before comparing — otherwise correct citations get
-# falsely flagged as hallucinations (the bug seen in the first live run).
-LAW_NAME_ALIASES = {
-    "中华人民共和国民法典": "民法典",
-    "中华人民共和国刑法": "刑法",
-    "中华人民共和国公司法": "公司法",
-    "中华人民共和国个人所得税法": "个人所得税法",
-    "中华人民共和国增值税法": "增值税法",
-    "中华人民共和国增值税暂行条例": "增值税暂行条例",
-    "中华人民共和国专利法": "专利法",
-    "中华人民共和国劳动合同法": "劳动合同法",
-    "中华人民共和国合同法": "合同法",
-}
-
-_CN_NUM = {"零": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6,
-           "七": 7, "八": 8, "九": 9, "十": 10, "百": 100, "千": 1000}
+def _load_prompts(locale: str) -> str:
+    key = "system_prompt_en" if locale == "en" else "system_prompt_zh"
+    fallback = (
+        "You are a rigorous PRC legal assistant. Cite accurate law name and article."
+        if locale == "en" else
+        "你是一名严谨的中国法律助手。回答时如需援引法条，必须给出准确的法条名称与条号，"
+        "例如《民法典》第584条。不要编造不存在的法条；若不确定，应明确说明而非猜测。"
+    )
+    if not PROMPTS_PATH.exists():
+        return fallback
+    try:
+        data = json.loads(PROMPTS_PATH.read_text(encoding="utf-8"))
+        return data.get(key, fallback)
+    except Exception:
+        return fallback
 
 
-def cn_to_int(s: str) -> int:
-    """Convert a Chinese numeral (up to 9999) or arabic numeral string to int."""
-    s = (s or "").strip()
-    if s.isdigit():
-        return int(s)
-    total = 0
-    current = 0
-    for ch in s:
-        if ch in ("十", "百", "千"):
-            unit = _CN_NUM[ch]
-            if current == 0:
-                current = 1
-            total += current * unit
-            current = 0
-        else:
-            current = _CN_NUM.get(ch, 0)
-    total += current
-    return total
-
-
-def normalize_law_name(name: str) -> str:
-    n = (name or "").strip()
-    n = re.sub(r"^中华人民共和国", "", n)        # 民法典 ≡ 中华人民共和国民法典
-    n = LAW_NAME_ALIASES.get(n, n)
-    n = re.sub(r"\s+", "", n)                  # drop internal whitespace
-    return n
-
-
-def citation_key(cite: str) -> str:
-    """Canonical key for a citation: '<law>#<article>'.
-
-    Matching is performed at *article* granularity (law name + article number),
-    robust to:
-      * official-name vs short-name variants (《民法典》≡《中华人民共和国民法典》),
-      * arabic vs Chinese numerals (第584条 ≡ 第五百八十四条),
-      * clause (款) precision differences — citing 《民法典》第496条第2款 when the
-        expected citation is 《民法典》第496条 is still the correct article and must
-        NOT be flagged as a hallucination. Real errors (wrong law, or wrong article
-        number, e.g. 第13条 vs 第15条) are still caught because the article number
-        differs.
-    """
-    m = CITATION_RE.search(cite or "")
-    if not m:
-        return normalize_law_name(cite or "")
-    law = normalize_law_name(m.group(1))
-    article = cn_to_int(m.group(2))
-    return f"{law}#{article}"
-
-
-def extract_citations(text: str) -> list[str]:
-    """Return a list of normalized citation strings found in `text`."""
-    out = []
-    for m in CITATION_RE.finditer(text or ""):
-        law, article, clause = m.group(1), m.group(2), m.group(3)
-        cite = f"《{law}》第{article}条"
-        if clause:
-            cite += f"第{clause}款"
-        out.append(cite)
-    return out
-
-
-# ----------------------------------------------------------------------------
-# Model API (OpenAI-compatible)
-# ----------------------------------------------------------------------------
-def call_model(model_cfg: dict, prompt: str, api_key: str, timeout: int = 90,
-               max_retries: int = 5, backoff: float = 2.0) -> str:
+def call_model(model_cfg: dict, prompt: str, api_key: str, system_prompt: str,
+               timeout: int = 120, max_retries: int = 5, backoff: float = 2.0,
+               min_interval: float = 0.5) -> str:
     """Call an OpenAI-compatible chat endpoint and return the assistant text.
 
-    Retries transient network errors (ReadTimeout / ConnectionError) with
-    exponential backoff. Raises on final failure so the caller can record the
-    question as unanswered rather than crash the whole run. Non-transient errors
-    (auth, 4xx, bad JSON) fail fast without retrying.
+    Retry policy (principled, not fail-fast-for-everything):
+      * 429 / 5xx (HTTPError with retryable status) → retry with exponential
+        backoff, honoring the server's `Retry-After` header when present.
+      * network errors (ReadTimeout / ConnectionError) → retry.
+      * non-JSON response body → retry (transient gateway glitch).
+      * 401 / 403 / 404 (auth or config error) → fail fast, do NOT retry.
+    Raises ModelCallError on final failure so the caller records an explicit
+    ✗ERR verdict rather than silently turning the empty answer into "未作答".
     """
     if not api_key:
-        raise RuntimeError(
+        raise ModelCallError(
             f"No API key for {model_cfg['id']} (env {model_cfg['api_key_env']}). "
             "Set it or run with --demo."
         )
     try:
         import requests
         from requests.exceptions import ReadTimeout, ConnectionError as ConnError
-    except ImportError:  # pragma: no cover
-        raise RuntimeError("Missing dependency: requests.  Install with `pip install requests`.")
+    except ImportError:
+        raise ModelCallError("Missing dependency: requests. Install with `pip install requests`.")
+
+    max_tokens = int(model_cfg.get("max_tokens", 2048))
     payload = {
         "model": model_cfg["model"],
         "messages": [
-            {"role": "system", "content": "你是一名严谨的中国法律助手。回答时如需援引法条，必须给出准确的法条名称与条号，例如《民法典》第584条。不要编造不存在的法条。"},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.0,
-        "max_tokens": 1024,
+        "max_tokens": max_tokens,
     }
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    last_err = None
+    last_err: Exception | None = None
+
     for attempt in range(1, max_retries + 1):
         try:
             resp = requests.post(model_cfg["api_base"], json=payload, headers=headers, timeout=timeout)
+            status = resp.status_code
+            # ---- fail-fast: auth / config errors ----
+            if status in (401, 403, 404):
+                raise ModelCallError(f"{model_cfg['id']} HTTP {status} (auth/config error, not retried)")
+            # ---- retryable: rate limit / server errors ----
+            if status >= 500 or status == 429:
+                retry_after = resp.headers.get("Retry-After")
+                wait = float(retry_after) if (retry_after and retry_after.isdigit()) else backoff * (2 ** (attempt - 1))
+                if attempt < max_retries:
+                    print(f"  [warn] {model_cfg['id']} HTTP {status}; retry in {wait:.0f}s "
+                          f"(attempt {attempt}/{max_retries})", flush=True)
+                    time.sleep(wait)
+                    continue
+                raise ModelCallError(f"{model_cfg['id']} HTTP {status} after {max_retries} retries")
             resp.raise_for_status()
             data = resp.json()
             return data["choices"][0]["message"]["content"].strip()
+        except ModelCallError:
+            raise
         except (ReadTimeout, ConnError) as e:  # transient network — retry
             last_err = e
             if attempt < max_retries:
                 wait = backoff * (2 ** (attempt - 1))
-                print(f"  [warn] {model_cfg['id']} attempt {attempt}/{max_retries} failed ({type(e).__name__}); retry in {wait:.0f}s", flush=True)
+                print(f"  [warn] {model_cfg['id']} {type(e).__name__}; retry in {wait:.0f}s "
+                      f"(attempt {attempt}/{max_retries})", flush=True)
                 time.sleep(wait)
-            else:
-                print(f"  [warn] {model_cfg['id']} exhausted {max_retries} retries ({type(e).__name__}); marking unanswered", flush=True)
-        except Exception:
-            raise  # non-transient — fail fast
-    raise last_err if last_err else RuntimeError("unknown model-call error")
+                continue
+            raise ModelCallError(f"{model_cfg['id']} network error after {max_retries} retries: {e}")
+        except ValueError:  # JSON decode error — transient gateway glitch, retry
+            last_err = ValueError("non-JSON response")
+            if attempt < max_retries:
+                wait = backoff * (2 ** (attempt - 1))
+                print(f"  [warn] {model_cfg['id']} non-JSON response; retry in {wait:.0f}s "
+                      f"(attempt {attempt}/{max_retries})", flush=True)
+                time.sleep(wait)
+                continue
+            raise ModelCallError(f"{model_cfg['id']} non-JSON response after {max_retries} retries")
+        except Exception as e:  # any other unexpected — fail fast
+            raise ModelCallError(f"{model_cfg['id']} unexpected error: {e}")
+
+    raise last_err if last_err else ModelCallError("unknown model-call error")
 
 
 # ----------------------------------------------------------------------------
-# Verification
+# Verification dispatch
 # ----------------------------------------------------------------------------
-def _try_import_bench_verifier():
-    """Best-effort import of the bench verification engine. Returns callable or None."""
-    try:
-        # If bench is installed as a package or present as submodule
-        import importlib
-
-        mod = importlib.import_module("legal_hallucination_bench.verify")
-        return mod.verify_citation
-    except Exception:
-        # Also try submodule path
-        bench_path = ROOT / "legal-hallucination-bench"
-        if bench_path.exists():
-            sys.path.insert(0, str(bench_path))
-            try:
-                import importlib
-
-                mod = importlib.import_module("legal_hallucination_bench.verify")
-                return mod.verify_citation
-            except Exception:
-                return None
-    return None
+def verify_answer(question: dict, answer: str, eq: Equivalence) -> dict:
+    """Verify a single answer. The local deterministic verifier IS the official
+    methodology (docs/METHODOLOGY.md §7)."""
+    return verify_fn(question, answer, eq)
 
 
-def verify_local(question: dict, answer: str) -> dict:
-    """Verify a single answer against expected_citation.
-
-    Production is designed to delegate to the bench verification engine (which
-    checks against the authoritative statute knowledge base). The bench repo is
-    NOT currently packaged as an importable module, so this function is the
-    active engine in the live pipeline. It has been hardened to avoid publishing
-    misleading numbers:
-
-      * canonicalizes law names (《民法典》≡《中华人民共和国民法典》) and article
-        numerals (第584条 ≡ 第五百八十四条),
-      * accepts user-declared *equivalent* citations: a question may carry an
-        `acceptable_citations` list (each with a required `justification`). A hit
-        on any acceptable citation counts as correct exactly like hitting
-        `expected_citation` — this is the "equivalence argument gate" described in
-        docs/METHODOLOGY.md §7, so models citing a substantively equivalent legal
-        source (e.g. a current implementing rule vs the principle statute) are not
-        unfairly penalized,
-      * matches at *article* granularity, so clause (款/项) precision differences
-        are not flagged as hallucinations,
-      * treats unanswered questions (no citation) as '·' (not a false 0% best),
-      * treats unverifiable questions / missing expected_citation as '?' rather
-        than penalizing them as hallucinations.
-    """
-    citations = extract_citations(answer)
-    verifiable = question.get("verifiable", True)
-    expected = question.get("expected_citation", "")
-
-    if not citations:
-        return {"status": "·", "detail": "未识别到法条引注", "citations": []}
-
-    if not verifiable or not expected:
-        # We cannot judge correctness against a knowledge base; do not penalize.
-        return {"status": "?", "detail": "无法判定（题目不可验证或无预期引注）", "citations": citations}
-
-    key_expected = citation_key(expected)
-    keys_actual = [citation_key(c) for c in citations]
-
-    # User-declared equivalent citations (each must carry a justification — see
-    # docs/METHODOLOGY.md §7). A hit on any acceptable citation is correct.
-    acceptable = question.get("acceptable_citations") or []
-    matched_alt = None
-    for alt in acceptable:
-        alt_cite = alt.get("citation", "") if isinstance(alt, dict) else str(alt)
-        if citation_key(alt_cite) in keys_actual:
-            matched_alt = alt
-            break
-
-    if key_expected in keys_actual:
-        return {"status": "✓", "detail": f"命中预期引注 {expected}", "citations": citations}
-    if matched_alt is not None:
-        alt_cite = matched_alt.get("citation", "") if isinstance(matched_alt, dict) else str(matched_alt)
-        just = matched_alt.get("justification", "") if isinstance(matched_alt, dict) else ""
-        return {
-            "status": "✓",
-            "detail": f"命中可接受等价引注 {alt_cite}（等价性论证：{just}）",
-            "citations": citations,
-        }
-    # A citation exists but does not match the expected verifiable citation
-    return {
-        "status": "✗MA",
-        "detail": f"引注与预期不符 (期望 {expected}, 实际 {citations[0]})",
-        "citations": citations,
-    }
-
-
-def verify_answer(verifier, question: dict, answer: str) -> dict:
-    if verifier is not None:
-        try:
-            return verifier(question, answer)
-        except Exception as e:  # pragma: no cover - fall back gracefully
-            print(f"  [warn] bench verifier failed ({e}); using local fallback", flush=True)
-    return verify_local(question, answer)
-
-
-# Tie-break priority for the *displayed* per-question verdict when sampling
-# yields no strict majority. For a hallucination-watch board we are
-# conservative: a model that erred in any sample is represented as having
-# erred, rather than optimistic.
-_STATUS_PRIORITY = ["✗MA", "✗NF", "✗F", "✓", "·", "?"]
+# ----------------------------------------------------------------------------
+# Aggregation (N samples -> one per-question record)
+# ----------------------------------------------------------------------------
+# Tie-break priority for the *displayed* per-question verdict. Conservative for a
+# hallucination-watch board: a hallucination verdict outranks a correct one, and
+# an explicit API error (✗ERR) is surfaced when no hallucination is present.
+_STATUS_PRIORITY = ["✗MA", "✗NF", "✗F", "✗T", "✗ERR", "✓", "·", "?"]
 
 
 def aggregate_samples(model_id: str, question: dict, samples_results, n_samples: int) -> dict:
@@ -300,10 +186,9 @@ def aggregate_samples(model_id: str, question: dict, samples_results, n_samples:
 
     `samples_results` is a list of (answer_text, verification_dict). We compute:
       * `counts`        — how many samples fell into each status,
-      * `majority`      — the most frequent status (tie-broken by _STATUS_PRIORITY),
-      * `_correct/_wrong/_nocite/_unverif` — pooled tallies used by build_leaderboard
-                          and build_domain_hvi (so HVI is averaged over all samples,
-                          much more stable than a single run),
+      * `majority`      — most frequent status (tie-broken by _STATUS_PRIORITY),
+      * `_correct/_wrong/_nocite/_temporal/_api_err/_unverif` — pooled tallies used
+        by build_leaderboard / build_domain_hvi (HVI averaged over all samples),
       * `detail`        — representative detail annotated with the sample split.
     """
     statuses = [v["status"] for _, v in samples_results]
@@ -319,9 +204,10 @@ def aggregate_samples(model_id: str, question: dict, samples_results, n_samples:
     correct = counts.get("✓", 0)
     wrong = sum(counts.get(s, 0) for s in HALLUCINATION_STATUSES)
     nocite = counts.get("·", 0)
+    temporal = counts.get("✗T", 0)
+    api_err = counts.get("✗ERR", 0)
     unverif = counts.get("?", 0)
 
-    # Representative answer & detail: prefer a sample whose status == majority.
     rep_answer = next((a for a, v in samples_results if v["status"] == majority), samples_results[0][0])
     rep_v = next((v for a, v in samples_results if v["status"] == majority), samples_results[0][1])
     rep_citations = rep_v.get("citations", [])
@@ -330,6 +216,8 @@ def aggregate_samples(model_id: str, question: dict, samples_results, n_samples:
         detail = f"{rep_v['detail']}（{correct}/{n_samples} 取样正确）"
     elif majority in HALLUCINATION_STATUSES:
         detail = f"{rep_v['detail']}（{counts.get(majority, 0)}/{n_samples} 取样错引）"
+    elif majority == "✗ERR":
+        detail = f"接口调用失败（{api_err}/{n_samples} 取样报错）"
     elif majority == "·":
         detail = f"未识别到法条引注（{nocite}/{n_samples} 取样无引注）"
     else:
@@ -343,22 +231,24 @@ def aggregate_samples(model_id: str, question: dict, samples_results, n_samples:
         "status": majority,
         "detail": detail,
         "citations": rep_citations,
-        # internal tallies (stripped before writing verifications.jsonl)
         "_correct": correct,
         "_wrong": wrong,
         "_nocite": nocite,
+        "_temporal": temporal,
+        "_api_err": api_err,
         "_unverif": unverif,
         "_counts": counts,
     }
 
 
 def _augment_single_for_leaderboard(rec: dict):
-    """Backfill the internal tally fields for a single-sample (demo) record so
-    build_leaderboard / build_domain_hvi work uniformly."""
+    """Backfill internal tally fields for a single-sample (demo) record."""
     st = rec.get("status", "?")
     rec["_correct"] = 1 if st == "✓" else 0
     rec["_wrong"] = 1 if st in HALLUCINATION_STATUSES else 0
     rec["_nocite"] = 1 if st == "·" else 0
+    rec["_temporal"] = 1 if st == "✗T" else 0
+    rec["_api_err"] = 1 if st == "✗ERR" else 0
     rec["_unverif"] = 1 if st == "?" else 0
     rec["_counts"] = {st: 1}
 
@@ -371,13 +261,12 @@ def load_json(path: Path):
         return json.load(f)
 
 
-def run_evaluation(eval_date: str, output_root: Path, demo: bool = False, samples: int = 3):
+def run_evaluation(eval_date: str, output_root: Path, demo: bool = False,
+                   samples: int = 3, locale: str = "zh"):
     models = load_json(CONFIG_DIR / "models.json")["models"]
     questions = load_json(CONFIG_DIR / "questions.json")["questions"]
-
-    verifier = None if demo else _try_import_bench_verifier()
-    if not demo and verifier is None:
-        print("[info] bench verifier not found; using local fallback verifier.", flush=True)
+    eq = Equivalence.load(EQUIV_PATH)
+    system_prompt = _load_prompts(locale)
 
     day_dir = output_root / "answers" / eval_date
     day_dir.mkdir(parents=True, exist_ok=True)
@@ -385,7 +274,7 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False, sample
     answers_path = day_dir / "answers.jsonl"
     verifications_path = day_dir / "verifications.jsonl"
 
-    model_results = {}  # model_id -> list of aggregated per-question records
+    model_results = {}
     answer_records = []
 
     # ---- demo mode: reuse seeded verifications (no API calls) -------------
@@ -394,8 +283,7 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False, sample
         if not seeded.exists():
             sys.exit(
                 f"Demo mode needs seeded data at {seeded}.\n"
-                "Run `python scripts/seed_demo.py` first (it writes demo answers/verifications).\n"
-                "Then re-run with --demo to recompute the leaderboard from seeded results."
+                "Run `python scripts/seed_demo.py` first, then re-run with --demo."
             )
         print(f"[demo] reusing seeded verifications from {seeded}", flush=True)
         with open(seeded, "r", encoding="utf-8") as f:
@@ -406,36 +294,41 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False, sample
                 r = json.loads(line)
                 _augment_single_for_leaderboard(r)
                 model_results.setdefault(r["model"], []).append(r)
-        # write answers.jsonl placeholder only if missing (keep seed if present)
         if not answers_path.exists():
             with open(answers_path, "w", encoding="utf-8") as f:
-                f.write("")  # demo: answers not regenerated
+                f.write("")
         _finalize(output_root, model_results, eval_date, verifications_path)
         return
+
+    print(f"[info] verifier: local deterministic engine (official methodology, "
+          f"{len(eq.repealed_laws)} repealed laws tracked, "
+          f"{len(eq._map)} equivalent provision mappings)", flush=True)
 
     for model in models:
         if not model.get("enabled", True):
             continue
-        print(f"[eval] model={model['id']} (sampling x{samples})", flush=True)
+        min_interval = float(model.get("min_interval_seconds", 0.5))
+        print(f"[eval] model={model['id']} (sampling x{samples}, locale={locale})", flush=True)
         verifs = []
         for q in questions:
+            prompt = q.get("prompt_en") if (locale == "en" and q.get("prompt_en")) else q["prompt"]
             api_key = os.environ.get(model["api_key_env"], "")
-            samples_results = []  # list of (answer_text, verification_dict)
+            samples_results = []
             for s_idx in range(samples):
+                answer = ""
                 try:
-                    answer = call_model(model, q["prompt"], api_key)
-                except Exception as e:
+                    answer = call_model(model, prompt, api_key, system_prompt)
+                    v = verify_answer(q, answer, eq)
+                except ModelCallError as e:
                     print(f"  [error] {model['id']} q{q['qid']} sample{s_idx+1}: {e}", flush=True)
-                    answer = ""
-                time.sleep(0.5)  # polite rate limiting between samples
-                v = verify_answer(verifier, q, answer)
+                    v = {"status": "✗ERR", "detail": str(e), "citations": []}
+                time.sleep(min_interval)
                 samples_results.append((answer, v))
             agg = aggregate_samples(model["id"], q, samples_results, samples)
             answer_records.append({
                 "model": model["id"],
                 "qid": q["qid"],
-                "answer": next((a for a, v in samples_results if v["status"] == agg["status"]),
-                               samples_results[0][0]),
+                "answer": next((a for a, v in samples_results if v["status"] != "✗ERR"), ""),
                 "answers": [a for a, _ in samples_results],
                 "n_samples": samples,
                 "counts": agg["_counts"],
@@ -443,18 +336,15 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False, sample
             verifs.append(agg)
         model_results[model["id"]] = verifs
 
-    # Write answers.jsonl
     with open(answers_path, "w", encoding="utf-8") as f:
         for r in answer_records:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
-    # Write verifications, leaderboard, and history
     _finalize(output_root, model_results, eval_date, verifications_path)
     return build_leaderboard(model_results)
 
 
 def _finalize(output_root: Path, model_results: dict, eval_date: str, verifications_path: Path):
-    """Write verifications.jsonl, leaderboard.json, and append to history."""
     day_dir = verifications_path.parent
     models = load_json(CONFIG_DIR / "models.json")["models"]
     questions = load_json(CONFIG_DIR / "questions.json")["questions"]
@@ -464,7 +354,6 @@ def _finalize(output_root: Path, model_results: dict, eval_date: str, verificati
         all_verifs.extend(verifs)
     with open(verifications_path, "w", encoding="utf-8") as f:
         for r in all_verifs:
-            # strip internal sampling tallies; keep the matrix-facing fields
             clean = {k: v for k, v in r.items() if not k.startswith("_")}
             f.write(json.dumps(clean, ensure_ascii=False) + "\n")
 
@@ -476,12 +365,17 @@ def _finalize(output_root: Path, model_results: dict, eval_date: str, verificati
 
     history_path = output_root / "leaderboard_history.json"
     history = load_json(history_path) if history_path.exists() else {
-        "updated_at": eval_date, "models": [], "domains": [], "history": []}
-    history["history"] = [h for h in history["history"] if h["date"] != eval_date]
-    history["history"].append({"date": eval_date, "leaderboard": leaderboard, "domain_hvi": domain_hvi})
-    history["history"].sort(key=lambda h: h["date"])
+        "updated_at": date_cls.today().isoformat(), "models": [], "domains": [], "history": []}
+    # de-dup: drop any existing entry for the same date
+    history["history"] = [h for h in history["history"] if h.get("date") != eval_date]
+    history["history"].append({
+        "date": eval_date,
+        "leaderboard": leaderboard,
+        "domain_hvi": domain_hvi,
+    })
     history["updated_at"] = eval_date
-    history["models"] = [m["id"] for m in models if m.get("enabled", True)]
+    history["models"] = list(dict.fromkeys(
+        [r["model"] for r in leaderboard] + list(history.get("models", []))))
     history["domains"] = sorted({q.get("domain", "未分类") for q in questions})
     with open(history_path, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
@@ -493,35 +387,46 @@ def _finalize(output_root: Path, model_results: dict, eval_date: str, verificati
 def build_leaderboard(model_results: dict) -> list[dict]:
     rows = []
     for model_id, verifs in model_results.items():
-        # Pooled across all samples: HVI is the fraction of citation-bearing
-        # samples that were wrong — this averages out run-to-run variance.
         correct = sum(v.get("_correct", 0) for v in verifs)
         wrong = sum(v.get("_wrong", 0) for v in verifs)
-        total = correct + wrong
-        # Citations KPI: number of questions whose majority verdict is a citation.
-        cited_questions = sum(1 for v in verifs if v["status"] in {"✓", "✗MA", "✗NF", "✗F"})
-        if total == 0:
+        nocite = sum(v.get("_nocite", 0) for v in verifs)
+        temporal = sum(v.get("_temporal", 0) for v in verifs)
+        api_err = sum(v.get("_api_err", 0) for v in verifs)
+        total_cited = correct + wrong
+        total_engaged = correct + wrong + nocite
+
+        cited_questions = sum(1 for v in verifs
+                              if v["status"] in {"✓", "✗MA", "✗NF", "✗F", "✗T"})
+
+        if total_cited == 0:
             # Model cited nothing verifiable across all samples → "未作答".
-            hvi = None
-            crfi = None
+            hvi = crfi = coverage = integrity = temporal_score = None
             rank = None
         else:
-            hvi = round(wrong / total, 4)
-            crfi = round(correct / total, 4)
+            hvi = round(wrong / total_cited, 4)
+            crfi = round(correct / total_cited, 4)
+            coverage = round((correct + wrong) / total_engaged, 4) if total_engaged else None
+            integrity = round(correct / total_engaged, 4) if total_engaged else None
+            temporal_score = round(temporal / total_cited, 4) if total_cited else None
             rank = 0
+
         rows.append({
             "model": model_id,
             "hvi": hvi,
-            "citations": cited_questions,
             "crfi": crfi,
-            "temporal": 0.0,  # populated by bench verifier in production
+            "coverage": coverage,
+            "integrity": integrity,
+            "temporal": temporal_score,
+            "citations": cited_questions,
+            "api_errors": api_err,
             "answered": len(verifs),
             "rank": rank,
         })
-    # Answered models first (by HVI asc, then more citations); unanswered last.
+    # Answered models first (by HVI asc, then more citations, then fewer api errors)
     rows.sort(key=lambda r: (1 if r["hvi"] is None else 0,
                              r["hvi"] if r["hvi"] is not None else 0.0,
-                             -r["citations"]))
+                             -r["citations"],
+                             r["api_errors"]))
     answered = [r for r in rows if r["hvi"] is not None]
     for i, r in enumerate(answered, 1):
         r["rank"] = i
@@ -548,12 +453,13 @@ def main():
     ap.add_argument("--date", default=date_cls.today().isoformat(), help="evaluation date YYYY-MM-DD")
     ap.add_argument("--output", default=str(ROOT / "data"), help="data output root")
     ap.add_argument("--demo", action="store_true", help="demo mode: no API calls (seeded verifications required)")
-    ap.add_argument("--samples", type=int, default=3, help="samples per (model, question) for variance suppression (default 3)")
+    ap.add_argument("--samples", type=int, default=3, help="samples per (model, question) (default 3)")
+    ap.add_argument("--locale", choices=["zh", "en"], default="zh", help="question/prompt locale")
     args = ap.parse_args()
 
     output_root = Path(args.output)
     output_root.mkdir(parents=True, exist_ok=True)
-    run_evaluation(args.date, output_root, demo=args.demo, samples=args.samples)
+    run_evaluation(args.date, output_root, demo=args.demo, samples=args.samples, locale=args.locale)
 
 
 if __name__ == "__main__":

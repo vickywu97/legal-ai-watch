@@ -34,18 +34,30 @@ Legal AI Watch 用一套**可验证引注核验引擎**来回答这个问题，�
 
 | 指标 | 含义 |
 |------|------|
-| **HVI** | 引注幻觉率 = 幻觉引注数 / 总引注数（主排行榜指标，越低越好）|
-| **CRFI** | 可验证引注覆盖率（Correct & Retrievable Fraction of Citations）|
-| **时序幻觉率** | 涉及生效时间/修订版本的引注中出错的比例 |
-| **引注数** | 该模型本轮被抽样的有效法条引注总数 |
+| **HVI** | 引注幻觉率 = 错引数 ÷ 有效引注数（主指标，越低越好）|
+| **CRFI** | 可验证引注正确率 = 正确引注 ÷ 有效引注 |
+| **Coverage** | 引注覆盖率 = 有作答题 ÷ 总题（「装死不答」会被看见、被惩罚）|
+| **Integrity** | 综合正确率 = 正确 ÷（正确+错引+未作答），更全面反映可用性 |
+| **Temporal** | 时态幻觉率 = 涉时效/版本错误 ÷ 有效引注（如该用《民法典》却引已废止《合同法》）|
+| **API 错误** | 接口/基础设施失败次数（单列，不混入模型行为指标）|
 
 判定子类（逐题矩阵中使用）：
 - `✓` 引注真实且内容正确
 - `✗MA` 法条不存在 / 编造（Made-up Article）
 - `✗NF` 法条存在但内容不符（Not Faithful）
 - `✗F` 事实性错误
+- `✗T` 时态/版本幻觉：援引已废止 / 旧法（题目预期现行法）
+- `✗ERR` API / 基础设施失败（非模型行为，单列）
 - `?` 无法判定（知识库未覆盖）
 - `·` 未作答
+
+> 核验引擎为 [`scripts/verifier.py`](scripts/verifier.py)，配合
+> [`config/statute_equivalence.json`](config/statute_equivalence.json) 的规范化引注映射；
+> 详细方法论见 [docs/METHODOLOGY.md](docs/METHODOLOGY.md)。
+
+🌐 **支持中英双语评测**：题库每题含 `prompt_en`，`run_eval.py --locale en` 可跑英文题 +
+英文系统提示词（系统提示词版本化存于 [`config/prompts.json`](config/prompts.json)），
+中英文复用同一套核验口径。
 
 ---
 
@@ -89,6 +101,9 @@ export DASHSCOPE_API_KEY=...
 export MOONSHOT_API_KEY=...   # Kimi 当前已退出评测池（config/models.json 置 enabled:false），此变量保留以备重新启用
 python scripts/run_eval.py --date 2026-08-08 --output data/ --samples 3
 python scripts/generate_dashboard.py --data data/ --output dashboard/
+
+# 英文评测（可选，复用同一套核验引擎与规范化映射）
+python scripts/run_eval.py --date 2026-08-08 --locale en --output data/ --samples 3
 ```
 
 ---
@@ -98,7 +113,7 @@ python scripts/generate_dashboard.py --data data/ --output dashboard/
 ```
 legal-ai-watch/
 ├── .github/workflows/        # 每周 & 手动评测 CI
-├── config/                   # models.json / questions.json / secrets.example.yml
+├── config/                   # models.json / questions.json / prompts.json / statute_equivalence.json / secrets.example.yml
 ├── scripts/                  # run_eval / generate_dashboard / sync / social / seed
 ├── data/                     # answers/, leaderboard_history.json（model_metadata.json 在 config/）
 ├── dashboard/                # 生成的静态站点（GitHub Pages 源）

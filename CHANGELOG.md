@@ -62,4 +62,17 @@ Each line follows: `YYYY-MM-DD · <scope> · <summary>`
 - **本地验证**：Q5 模型引第27条 → ✓（带 justification）；引第25条 → 维持 ✗MA（真实错误）；引 target 直接命中 → ✓。
 - 影响：上一轮真实评测中 Qwen-Max 引《营改增试点实施办法》第27条被错杀为 ✗MA，本版修正后该题为 ✓，Qwen HVI 由 30%→**20%**（与 DeepSeek 并列最佳档）。需重新运行 Manual Model Evaluation 以刷新榜单。
 
+## 2026-08-14 · refactor · v2.0 核验引擎与指标体系统一重构
+- **确定性核验引擎 `scripts/verifier.py`（取代 `verify_local` / bench 回退分支）**：线上实际运行的是本仓库自带的确定性引擎，与 bench 知识库版本一致，不再有「bench 缺失→回退」的不确定性。引注解析支持中文 `《xxx》第N条` 与英文 `Article N of the Civil Code` / `Civil Code Article N` 两种形态（英文法名须以 Act/Code/Law 结尾并归一化到中文法名）。
+- **规范化引注映射 `config/statute_equivalence.json`**：单一事实源，覆盖跨法等价（增值税暂行条例第10条 ↔ 营改增27条 ↔ 增值税法22条）、跨版本等价（2018 公司法 43/177/33/13 ↔ 2023 公司法 66/224/57/10）与 13 项已废止法律清单。新增等价关系改一份 JSON 全局生效，`acceptable_citations` 退居「偶发特例」的逐题覆盖角色，每条仍须带 `justification`。
+- **指标体系统一重构**：HVI = wrong/(correct+wrong)、CRFI = correct/(correct+wrong)；**新增 Coverage / Integrity**（分母纳入 `nocite`，「装死不答」不再被静默豁免）、**Temporal**（✗T ÷ 有效引注）；API 失败（✗ERR）单列 `api_errors`，不混入任何模型行为分母。
+- **时态幻觉 ✗T 单列**：模型引已废止法（如该用《民法典》却引《合同法》）判 `✗T`，区别于「编造法条」✗MA；题库以 `temporal_trap: true` 标记陷阱题分维度统计。
+- **中英双语评测**：`config/prompts.json` 版本化存放中英文系统提示词；题库每题含 `prompt_en`；`run_eval.py --locale {zh,en}` 切换；中英文复用同一套核验口径。
+- **题库扩充**：10 → 30 题，覆盖民法/刑法/税法/专利/公司法/数据合规/竞争法，全题双语，含 3 道时态陷阱题。
+- **调用健壮性**：`call_model` 加 429/5xx/网络/非 JSON → 指数退避重试（尊重 Retry-After），401/403/404 快速失败；耗尽 → `ModelCallError` → ✗ERR。
+- **回归测试 + CI 闸门**：新增 `tests/`（verifier / metrics / retry，27 项）；workflow 在跑 API 前先跑 `pytest`，失败阻断部署；新增 `alert-on-failure` job，评测失败时开（或追加评论到）`ci-failure` 标签 Issue。
+- **Dashboard 增强**：输出 `status.json` 新鲜度标记（>14 天过期提示）、与上期对比 diff 视图、矩阵 cell 点击展开逐题原始回答下钻。
+- **修复**：Temporal 指标分母曾把 ✗T 重复计入（`temporal/(total_cited+temporal)`），修正为 `temporal/total_cited`，并补专项测试锁定。
+- 影响：需重新运行 **Manual Model Evaluation**（30 题）以用新引擎/新指标刷新榜单；历史周数据会因指标定义变化而不可与新口径直接比较。
+
 <!-- NEW ENTRIES APPENDED ABOVE THIS LINE BY THE WEEKLY WORKFLOW -->

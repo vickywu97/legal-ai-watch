@@ -22,6 +22,8 @@ permissions:
 jobs:
   manual-eval:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout (with submodule)
         uses: actions/checkout@v4
@@ -35,7 +37,13 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install --upgrade pip requests
+        run: pip install --upgrade pip requests pytest
+
+      - name: Regression gate (pytest)
+        # Blocks the deploy if the verifier / metrics / retry logic regressed.
+        # A broken verifier would silently corrupt the leaderboard, so this
+        # must run BEFORE any paid API calls.
+        run: python -m pytest tests/ -q
 
       - name: Restore previous leaderboard history from gh-pages
         # Generated artifacts are no longer committed to main; the trend
@@ -68,3 +76,51 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dashboard
           publish_branch: gh-pages
+
+  alert-on-failure:
+    name: Alert on failure
+    needs: manual-eval
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `CI Failure: Manual Model Evaluation #${context.runId}`;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              `The **Manual Model Evaluation** workflow failed.`,
+              ``,
+              `- Run: ${runUrl}`,
+              `- Triggered by: ${context.actor}`,
+              `- Time (UTC): ${new Date().toISOString()}`,
+              ``,
+              `A failed run means the weekly public leaderboard is stale. ` +
+              `Check the run log before re-running.`
+            ].join('\n');
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'ci-failure'
+            });
+            const existing = issues.find(i => i.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Still failing at ${new Date().toISOString()} — ${runUrl}`
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['ci-failure']
+              });
+            }

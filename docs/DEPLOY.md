@@ -12,7 +12,9 @@ legal-ai-watch/
 ├── config/                 # 受版本控制（"纯源码"）
 │   ├── models.json          # 被测模型 + enabled 开关
 │   ├── model_metadata.json  # 厂商/版本/参数量（Dashboard 元数据来源）
-│   ├── questions.json       # 题库 + 每题 acceptable_citations（等价引注闸门）
+│   ├── questions.json       # 题库（含 prompt_en / acceptable_citations / temporal_trap）
+│   ├── prompts.json          # 中英文系统提示词（版本化，不再硬编码）
+│   └── statute_equivalence.json  # 规范化引注映射（跨法/跨版本等价 + 废止法清单）
 │   └── secrets.example.yml  # 密钥模板
 ├── scripts/                # 评测/生成/同步/演示脚本
 ├── .github/workflows/      # manual-eval.yml（手动）/ weekly-eval.yml（每周一）
@@ -88,12 +90,15 @@ GitHub → Actions → **Manual Model Evaluation** → **Run workflow**，可选
 `weekly-eval.yml` 定时 `cron: '0 0 * * 1'`（每周一 00:00 UTC = 北京时间 08:00），
 也支持 `workflow_dispatch` 手动触发。流程：
 1. checkout（含 bench submodule，best-effort）
-2. `sync_questions.py` 从 submodule 同步题库（best-effort，失败仅跳过）
-3. 从 `gh-pages` 拉回历史 → `run_eval.py --samples 3` → 生成 `data/`
-4. `generate_dashboard.py` 生成自包含 `dashboard/`
-5. `peaceiris/actions-gh-pages@v3` 仅发布到 `gh-pages`
+2. 安装依赖并跑 **`pytest` 回归闸门**（失败则直接阻断部署——避免坏掉的核验器静默污染榜单）
+3. `sync_questions.py` 从 submodule 同步题库（best-effort，失败仅跳过）
+4. 从 `gh-pages` 拉回历史 → `run_eval.py --samples 3` → 生成 `data/`
+5. `generate_dashboard.py` 生成自包含 `dashboard/`（含 `status.json` 新鲜度标记）
+6. `peaceiris/actions-gh-pages@v3` 仅发布到 `gh-pages`
 
 > 两个 workflow 都**只部署 gh-pages，不向 main 提交**。
+> 评测 job 失败时，会由独立的 `alert-on-failure` job 在仓库开（或追加评论到）一个
+> 带 `ci-failure` 标签的 Issue，提醒维护者榜单可能已过期——避免「静默失败、无人知晓」。
 
 ---
 
@@ -115,16 +120,25 @@ python scripts/generate_dashboard.py --data data/ --output dashboard/
 
 ---
 
-## 5. 等价引注闸门（acceptable_citations）
+## 5. 等价引注与时态幻觉认定
 
-某些模型引注**实质正确但条号版本不同**（如 2023 新《公司法》第66条 vs 2018 旧法
-第43条），不应算幻觉。在 `config/questions.json` 给该题加 `acceptable_citations`
-（每条须带 `justification`），核验器取 `{expected} ∪ {acceptable}` 并集，命中即判 `✓`。
-类型与门槛见 METHODOLOGY §7。
+核验引擎为 `scripts/verifier.py`，通过两层机制决定「模型引注是否命中预期」，避免把
+「实质正确 / 更精准」的引注机械判错（详细见 METHODOLOGY §7）：
+
+1. **主机制 — `config/statute_equivalence.json`（规范化映射）**：结构化、可审计的单一事实源。
+   覆盖跨法等价（增值税暂行条例第10条 ↔ 营改增实施办法第27条 ↔ 增值税法第22条）、
+   跨版本等价（2018 公司法 43/177/33/13 条 ↔ 2023 公司法 66/224/57/10 条）以及
+   13 项已废止法律清单（合同法、婚姻法等，用于识别时态幻觉 ✗T）。新增一个等价关系改一份
+   JSON 即可全局生效，无需逐题手写。
+2. **次机制 — `config/questions.json` 的 `acceptable_citations`**：仅保留无法纳入系统性等价、
+   但经出题人论证确属正确的偶发特例，每条须带 `justification`。逐题覆盖，与规范化映射取并集。
 
 **重要**：`weekly-eval.yml` 会跑 `sync_questions.py` 同步上游题库。该脚本已做
-**本地策展保留**——同步时自动把现有 `acceptable_citations` / `verifiable` 按 qid
-合并回去，不会因同步上游而丢失我们手搓的等价引注论证。
+**本地策展保留**——同步时自动把现有 `acceptable_citations` / `verifiable` /
+`prompt_en` / `temporal_trap` 按 qid 合并回去，不会因同步上游而丢失我们手搓的等价引注论证。
+
+> 不再存在「bench 核验器缺失 → 回退到仓库内 `verify_local`」的分支：本仓库的
+> `verifier.py` 即为线上实际运行的确定性核验引擎，与 bench 知识库版本保持一致。
 
 ---
 
@@ -147,9 +161,11 @@ open dashboard/index.html
 | `fetch first` 后 push 被拒 | 旧 workflow 往 main 写生成物 | 已通过「只发 gh-pages」根除；不要改回向 main 提交 |
 | `Node.js 20 is deprecated` 警告 | action 被 runner 强制跑 Node 24 | **无害**，构建成功；等 action 作者升级声明即消失，我侧无开关 |
 | Kimi 全题 429 / 未作答 | Moonshot 持续限流 | Kimi 已 `enabled:false` 退出评测池；`MOONSHOT_API_KEY` 保留以备重新启用 |
-| 某题被判 ✗MA 但引用看起来对 | 可能条号版本差异/等价源 | 给该题补 `acceptable_citations`（§5），重跑 |
+| 某题被判 ✗MA 但引用看起来对 | 可能条号版本差异/等价源 | 在 `config/statute_equivalence.json` 加规范化组（§5），或给该题补 `acceptable_citations`，重跑 |
+| `pytest` 闸门失败、未部署 | 核验/指标/重试逻辑回归 | 看 pytest 输出，修正 `scripts/verifier.py` / `run_eval.py` / `tests/`，再重跑 Manual Model Evaluation |
+| 出现带 `ci-failure` 标签的 Issue | 评测 job 失败 | 看对应 Actions run 日志；修复后重跑，Issue 会自动追加评论 |
+| Dashboard 顶部「数据已过期」 | 超过 14 天未成功出榜 | 检查 `alert-on-failure` Issue 与 weekly 工作流是否失败 |
 | Dashboard 趋势图空 | 历史仅 1 周 | 正常，≥2 周才出折线 |
-| `bench verifier not found` 提示 | bench 未以可导入模块提供 | 正常，自动回退到本仓库 `verify_local` |
 
 ---
 
