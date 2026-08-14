@@ -30,6 +30,9 @@
       "prompt": "盗窃罪的追诉时效是多久？请引用具体法条并说明计算依据。",
       "prompt_en": "What is the prescription period for prosecuting theft? Cite the specific provision and its basis.",
       "expected_citation": "《刑法》第87条",
+      "also_correct": [
+        {"citation": "《刑法》第264条", "justification": "盗窃罪法定刑（第264条）规定法定最高刑可达无期徒刑；结合第87条追诉时效（法定最高刑为无期徒刑、死刑的，经过二十年），模型引用第264条说明时效『计算依据』亦属正确，不应判为幻觉（✗MA）。"}
+      ],
       "verifiable": true
     },
     {

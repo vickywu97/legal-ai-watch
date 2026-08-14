@@ -76,7 +76,7 @@ def _preserve_local_curation(upstream: dict, local_path: Path) -> dict:
     except Exception:
         return upstream
     local_by_qid = {q.get("qid"): q for q in local.get("questions", [])}
-    preserve_fields = ("acceptable_citations", "verifiable", "prompt_en", "temporal_trap")
+    preserve_fields = ("acceptable_citations", "also_correct", "verifiable", "prompt_en", "temporal_trap")
     for q in upstream.get("questions", []):
         lq = local_by_qid.get(q.get("qid"))
         if not lq:
