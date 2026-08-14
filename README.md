@@ -4,14 +4,14 @@
 > **Automated weekly benchmark of Chinese legal LLMs' citation-hallucination rates**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Dashboard](https://img.shields.io/badge/Dashboard-GitHub%20Pages-blue)](https://vickywu97.github.io/legal-ai-watch)
+[![Repo](https://img.shields.io/badge/Repo-GitHub-blue)](https://github.com/vickywu97/legal-ai-watch)
 [![Data](https://img.shields.io/badge/data-synthetic%20%2F%20demo-orange)](https://github.com/vickywu97/legal-ai-watch)
 
 **Legal AI Watch** 全自动、零成本、每周更新地评测主流国产法律大模型的
 「法条引注幻觉率」（HVI），公开排行榜、追踪趋势变化，并生成可视化报告。
 整个流程由 GitHub Actions 驱动，零人工干预。
 
-🌐 **Live Dashboard:** https://vickywu97.github.io/legal-ai-watch
+🌐 **看板（本地查看）**：用浏览器直接打开仓库内 `dashboard/index.html` 即可看到排行榜（默认附带的为演示样本，见上方数据说明；本仓库不提供线上托管页面，避免 github.io 在国内不可访问的死链）。
 
 > ⚠️ **数据性质说明（务必先读）**：本仓库默认随附的数据是 **`scripts/seed_demo.py` 生成的 12 周合成演示样本**，**并非真实模型评测结果**。页面上展示的排行榜、趋势、HVI 数值均为**演示用途（synthetic / demo）**。要进行真实评测，请按下方「真实评测（需配置 API Key）」用你自己的密钥运行 `run_eval.py`；真实结果不会自动公开，需自行托管。GitHub Actions 的"每周定时"工作流也仅在配置好密钥的仓库中才会产出真实数据。
 
