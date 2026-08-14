@@ -28,15 +28,6 @@ def q(qid, citation):
             "expected_citation": citation, "verifiable": True}
 
 
-def real_question(qid):
-    """Load the actual question (incl. also_correct / acceptable_citations)
-    from config/questions.json, so tests exercise the real end-to-end config
-    rather than a synthetic question that drops those fields."""
-    import json
-    qs = json.load(open(CONFIG / "questions.json"))["questions"]
-    return next(x for x in qs if x["qid"] == qid)
-
-
 def test_parse_ref_basic():
     assert parse_ref("《民法典》第584条") == ("民法典", 584)
     # clause (款) is ignored — article granularity only
