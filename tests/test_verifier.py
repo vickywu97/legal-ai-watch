@@ -64,8 +64,14 @@ def test_verify_old_article_is_correct():
 
 def test_verify_vat_cross_law_equivalence():
     e = load_eq()
-    r = verify(q(5, "《增值税暂行条例》第10条"),
+    # Q5 expected is now the current 增值税法 第22条. 营改增27条 is canonically
+    # equivalent -> must still be accepted as correct.
+    r = verify(q(5, "《增值税法》第22条"),
                "依据《营业税改征增值税试点实施办法》第二十七条，下列进项税额不得抵扣。", e)
+    assert r["status"] == "✓"
+    # 增值税暂行条例第10条 is also canonically equivalent (historical) -> correct.
+    r = verify(q(5, "《增值税法》第22条"),
+               "依据《增值税暂行条例》第10条，下列进项税额不得抵扣。", e)
     assert r["status"] == "✓"
 
 
