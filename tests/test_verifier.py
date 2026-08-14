@@ -28,6 +28,15 @@ def q(qid, citation):
             "expected_citation": citation, "verifiable": True}
 
 
+def real_question(qid):
+    """Load the actual question (incl. also_correct / acceptable_citations)
+    from config/questions.json, so tests exercise the real end-to-end config
+    rather than a synthetic question that drops those fields."""
+    import json
+    qs = json.load(open(CONFIG / "questions.json"))["questions"]
+    return next(x for x in qs if x["qid"] == qid)
+
+
 def test_parse_ref_basic():
     assert parse_ref("《民法典》第584条") == ("民法典", 584)
     # clause (款) is ignored — article granularity only
@@ -76,6 +85,36 @@ def test_verify_wrong_article_is_hallucination():
     assert r["status"] == "✗MA"
 
 
+def _real_question(qid):
+    """Load a question dict from the curated questions.json (carries also_correct)."""
+    import json
+    data = json.loads((CONFIG / "questions.json").read_text(encoding="utf-8"))
+    return next(x for x in data["questions"] if x["qid"] == qid)
+
+
+def test_verify_also_correct_distinct_but_valid():
+    """A model citing a DIFFERENT but equally-correct article must NOT be
+    falsely flagged ✗MA (accuracy safeguard against inflated HVI)."""
+    e = load_eq()
+    # Q1 expected 584; 577 (违约责任一般规定) is also correct — cite ONLY 577
+    r = verify(_real_question(1),
+               "买方违约，卖方可依《民法典》第577条请求损害赔偿，这是违约责任的一般规定。", e)
+    assert r["status"] == "✓"
+    assert "同样正确" in r["detail"]
+    # Q14 expected 658; 663 (法定撤销) is also correct — cite ONLY 663
+    r = verify(_real_question(14),
+               "受赠人严重侵害赠与人权益的，赠与人可依《民法典》第663条撤销赠与。", e)
+    assert r["status"] == "✓"
+
+
+def test_verify_also_correct_does_not_mask_wrong_article():
+    """also_correct must not let a genuinely wrong citation pass."""
+    e = load_eq()
+    r = verify(_real_question(1),
+               "依据《刑法》第264条（盗窃罪），卖方应赔偿。", e)
+    assert r["status"] == "✗MA"
+
+
 def test_verify_nocite():
     e = load_eq()
     r = verify(q(1, "《民法典》第584条"), "这个需要结合具体情况判断。", e)
@@ -110,3 +149,26 @@ def test_verify_english_citation():
 def test_hallucination_status_includes_temporal():
     assert "✗T" in HALLUCINATION_STATUSES
     assert "✗MA" in HALLUCINATION_STATUSES
+
+
+def test_verify_repealed_vat_reg_on_non_vat_question_is_temporal():
+    e = load_eq()
+    # 增值税暂行条例 was repealed by 增值税法 (Art 38, eff 2026-01-01).
+    # Cited on a 民法典 question (outside its equivalence group) -> temporal hallucination.
+    r = verify(q(1, "《民法典》第584条"),
+               "依据《增值税暂行条例》第10条，进项税额不得抵扣。", e)
+    assert r["status"] == "✗T"
+
+
+def test_repealed_predecessors_declared_in_repealed_laws():
+    # Guard against drift: every law's repealed_predecessors must also appear
+    # in the top-level repealed_laws list, or temporal-hallucination detection
+    # silently misses a repealed law. (Caught 增值税暂行条例 missing on 2026-08-14.)
+    e = load_eq()
+    raw = e.raw
+    missing = []
+    for law, info in raw.get("laws", {}).items():
+        for p in info.get("repealed_predecessors", []):
+            if p not in raw.get("repealed_laws", []):
+                missing.append((law, p))
+    assert not missing, f"repealed_predecessors not declared in repealed_laws: {missing}"

@@ -1,5 +1,5 @@
 {
-  "_comment": "评测题库. 每题含 zh/en 双语 prompt, expected_citation 均为现行有效法条(最新修正版). 跨版本/跨法等价关系统一在 config/statute_equivalence.json 维护, 本题仅保留个别需带论证的一次性 acceptable_citations. 时序陷阱题(expected 为现行法, 模型若引已废止旧法将被判 ✗T)用于检验时序幻觉.",
+  "_comment": "评测题库. 每题含 zh/en 双语 prompt, expected_citation 均为现行有效法条(最新修正版). 跨版本/跨法等价关系统一在 config/statute_equivalence.json 维护, 本题仅保留个别需带论证的一次性 acceptable_citations. 时序陷阱题(expected 为现行法, 模型若引已废止旧法将被判 ✗T)用于检验时序幻觉. 另设 also_correct 字段收纳'不同但同样正确'的引注, 避免把正确回答误判为幻觉(✗MA). ⚠️ 全部 expected_citation / acceptable_citations / also_correct 均由 AI 整理生成, 未经执业律师逐条核验; 在经执业律师(本仓库所有者, 具中国律师/税务师/专利代理师资质)书面确认前, 不得将其 HVI/CRFI 等数值或结论用于任何外部引用(论文/媒体/产品选型/背书).",
   "version": "2026-08-14",
   "questions": [
     {
@@ -8,6 +8,9 @@
       "prompt": "买方违约，卖方可否请求赔偿合同履行后可以获得的利益？请引用具体法条。",
       "prompt_en": "If the buyer breaches, may the seller claim damages for the benefit obtainable after performance? Cite the specific provision.",
       "expected_citation": "《民法典》第584条",
+      "also_correct": [
+        {"citation": "《民法典》第577条", "justification": "违约责任一般规定（含损害赔偿请求基础），与第584条（可得利益赔偿特别规定）规制对象重叠，模型引此条亦属正确。"}
+      ],
       "verifiable": true
     },
     {
@@ -16,6 +19,9 @@
       "prompt": "格式条款提供者未尽提示说明义务，该条款效力如何？请引用具体法条。",
       "prompt_en": "If the provider of a standard clause fails to give prominent notice or explanation, what is the clause's validity? Cite the specific provision.",
       "expected_citation": "《民法典》第496条",
+      "also_correct": [
+        {"citation": "《民法典》第497条", "justification": "格式条款无效情形（免除己方责任、加重对方责任、排除对方主要权利等），与第496条（未提示说明则不算订入）规制对象相邻，模型引此条亦属正确。"}
+      ],
       "verifiable": true
     },
     {
@@ -54,6 +60,15 @@
       "prompt": "居民个人综合所得的计算中，专项附加扣除包含哪几项？请引用具体法条。",
       "prompt_en": "Which items are included in the special additional deductions for comprehensive income of resident individuals? Cite the specific provision.",
       "expected_citation": "《个人所得税法》第6条",
+      "also_correct": [
+        {"citation": "《个人所得税专项附加扣除暂行办法》第11条", "justification": "子女教育专项附加扣除，属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
+        {"citation": "《个人所得税专项附加扣除暂行办法》第12条", "justification": "继续教育专项附加扣除，属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
+        {"citation": "《个人所得税专项附加扣除暂行办法》第13条", "justification": "大病医疗专项附加扣除，属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
+        {"citation": "《个人所得税专项附加扣除暂行办法》第14条", "justification": "住房贷款利息专项附加扣除，属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
+        {"citation": "《个人所得税专项附加扣除暂行办法》第15条", "justification": "住房租金专项附加扣除，属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
+        {"citation": "《个人所得税专项附加扣除暂行办法》第16条", "justification": "赡养老人专项附加扣除，属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
+        {"citation": "《个人所得税专项附加扣除暂行办法》第17条", "justification": "3岁以下婴幼儿照护专项附加扣除（2022年新增），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"}
+      ],
       "verifiable": true
     },
     {
@@ -123,6 +138,9 @@
       "prompt": "不动产物权的设立、变更、转让和消灭，自何时发生效力？请引用具体法条。",
       "prompt_en": "When does a real right in immovable property take effect? Cite the specific provision.",
       "expected_citation": "《民法典》第214条",
+      "also_correct": [
+        {"citation": "《民法典》第209条", "justification": "不动产物权登记设立（与第214条「非经登记不生效」规制对象重叠），模型引此条亦属正确。"}
+      ],
       "verifiable": true
     },
     {
@@ -131,6 +149,9 @@
       "prompt": "赠与人在何种情形下可以撤销赠与？请引用具体法条。",
       "prompt_en": "Under what circumstance may a donor revoke a gift? Cite the specific provision.",
       "expected_citation": "《民法典》第658条",
+      "also_correct": [
+        {"citation": "《民法典》第663条", "justification": "赠与的法定撤销（受赠人严重侵害赠与人等情形），与第658条（交付前任意撤销）同属「赠与可撤销」之正确引注，模型引此条亦属正确。"}
+      ],
       "verifiable": true
     },
     {

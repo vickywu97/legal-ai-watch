@@ -283,7 +283,10 @@ def verify(question: dict, answer: str, eq: Equivalence) -> dict:
     if matched_canonical is not None:
         return {"status": "✓", "detail": f"命中预期引注 {expected}", "citations": citations}
 
-    # Per-question override (kept for backward compatibility / one-off cases)
+    # Per-question override (kept for backward compatibility / one-off cases):
+    # accepts provisions that map to the SAME canonical provision as expected
+    # (cross-version / cross-law equivalence). It CANNOT accept a *different but
+    # equally correct* article — that is what `also_correct` below is for.
     for alt in (question.get("acceptable_citations") or []):
         alt_cite = alt.get("citation", "") if isinstance(alt, dict) else str(alt)
         ref = parse_ref(alt_cite)
@@ -292,6 +295,25 @@ def verify(question: dict, answer: str, eq: Equivalence) -> dict:
             return {"status": "✓",
                     "detail": f"命中可接受等价引注 {alt_cite}（等价性论证：{just}）",
                     "citations": citations}
+
+    # Distinct-but-also-correct provisions: a model may cite a DIFFERENT article
+    # that is nonetheless legally correct (e.g. 违约责任一般规定 vs 损害赔偿
+    # 特别规定). Accepting these prevents FALSE ✗MA, which would otherwise inflate
+    # HVI and misrepresent the model. This is an accuracy-safeguard, not a loophole:
+    # every entry is curated and must survive the lawyer verification gate.
+    for alt in (question.get("also_correct") or []):
+        alt_cite = alt.get("citation", "") if isinstance(alt, dict) else str(alt)
+        ref = parse_ref(alt_cite)
+        if ref is None:
+            continue
+        alt_canon = eq.canonical(*ref)
+        for c in citations:
+            cref = parse_ref(c)
+            if cref is not None and eq.canonical(*cref) == alt_canon:
+                just = alt.get("justification", "") if isinstance(alt, dict) else ""
+                return {"status": "✓",
+                        "detail": f"命中同样正确的引注 {alt_cite}（同样正确：{just}）",
+                        "citations": citations}
 
     if temporal_hit is not None:
         return {"status": "✗T",

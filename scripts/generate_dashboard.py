@@ -163,6 +163,8 @@ def generate(data_root: Path, out_dir: Path):
         "models": len(models),
         "questions": len(questions),
         "history_weeks": len(payload["history"]),
+        "disclaimer": "本看板数值度量模型引注与策展基准条文的一致性，不构成法律意见；引注基准由 AI 整理，未经执业律师逐条核验。外部引用前须经执业律师书面确认。",
+        "ground_truth_status": "ai_curated_pending_lawyer_verification",
     }
     (out_dir / "status.json").write_text(json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -193,6 +195,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
+<div class="legal-disclaimer" role="note">
+  ⚠️ <b>非法律意见 · 演示/AI整理基准</b>：本看板数值为「模型引注与策展基准条文的一致性」度量，<b>不构成法律意见</b>；
+  引注基准（ground truth）由 AI 整理，<b>未经执业律师逐条核验</b>。在经执业律师书面确认前，<b>不得</b>将任何 HVI / CRFI 数值或结论用于论文、媒体、产品选型或对外背书等外部引用。
+</div>
 <header class="site-header">
   <div class="wrap">
     <div class="brand">
@@ -303,6 +309,8 @@ a:hover{text-decoration:underline}
 .tagline{margin:2px 0 0;color:#c7d2fe;font-size:13px}
 .updated{margin:10px 0 0;font-size:13px;color:#cbd5e1}
 .stale-warn{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:600}
+.legal-disclaimer{margin:0;padding:12px 18px;background:#fef2f2;border-bottom:2px solid #dc2626;color:#7f1d1d;font-size:13px;line-height:1.6}
+.legal-disclaimer b{color:#991b1b}
 .site-header .wrap{display:flex;flex-direction:column}
 
 main{padding:24px 0 40px}
