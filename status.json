@@ -1,0 +1,9 @@
+{
+  "generated_at": "2026-08-16T04:57:56.225452+00:00",
+  "data_date": "2026-08-16",
+  "models": 3,
+  "questions": 30,
+  "history_weeks": 3,
+  "disclaimer": "本看板数值度量模型引注与策展基准条文的一致性，不构成法律意见；引注基准由 AI 整理，未经执业律师逐条核验。外部引用前须经执业律师书面确认。",
+  "ground_truth_status": "ai_curated_pending_lawyer_verification"
+}

@@ -5,36 +5,51 @@
   const HISTORY = W.history || [];
   const META = W.metadata || {};
   const DOMAINS = W.domains || [];
+  const ANSWERS = W.answers || {};
 
-  // stable color per model
   const PALETTE = ["#2563eb","#0f766e","#d97706","#db2777","#7c3aed","#0891b2","#ca8a04","#16a34a"];
   const colorFor = (i) => PALETTE[i % PALETTE.length];
 
   function pct(x){ return ((x==null?0:x)*100).toFixed(0) + "%"; }
-  function hviColor(h){ // red high, green low
+  function num(x, d=0){ return x==null ? "—" : (d? x.toFixed(d) : x); }
+  function hviColor(h){
+    if (h == null) return "#94a3b8";
     if (h <= 0.15) return "#16a34a";
     if (h <= 0.35) return "#d97706";
     if (h <= 0.55) return "#ea580c";
     return "#dc2626";
   }
+  function statusClass(st){
+    if (st === "✓") return "ok";
+    if (st === "✗ERR") return "err";
+    if (st === "✗T") return "temporal";
+    if (["?","·"].includes(st)) return st === "·" ? "na" : "unk";
+    return "bad"; // ✗MA / ✗NF / ✗F
+  }
 
-  // ---- header ----
-  document.getElementById("last-updated").textContent = W.updated_at || "—";
+  // ---- header / freshness ----
+  const dataDate = W.matrix && W.matrix.date ? W.matrix.date : (HISTORY.length ? HISTORY[HISTORY.length-1].date : null);
+  document.getElementById("data-date").textContent = dataDate || "—";
+  document.getElementById("gen-date").textContent = (W.generated_at || "").slice(0,10) || "—";
+  if (dataDate) {
+    const days = Math.floor((Date.now() - new Date(dataDate).getTime()) / 86400000);
+    if (days > 14) document.getElementById("stale-warn").style.display = "inline-block";
+  }
 
   // ---- KPI cards (latest week) ----
   const latest = HISTORY.length ? HISTORY[HISTORY.length - 1] : null;
   const kpiBox = document.getElementById("kpi-cards");
   if (latest) {
     const allRows = latest.leaderboard || [];
-    const lb = allRows.filter(r => r.hvi != null);   // ranked (answered) models only
-    const best = lb[0];
-    const worst = lb[lb.length - 1];
+    const lb = allRows.filter(r => r.hvi != null);
+    const best = lb[0], worst = lb[lb.length - 1];
     const avg = lb.length ? lb.reduce((s,r)=>s+r.hvi,0)/lb.length : 0;
+    const avgCov = lb.length ? lb.reduce((s,r)=>s+(r.coverage||0),0)/lb.length : 0;
     const cards = [
       {label:"参评模型", value: lb.length, sub:"本周活跃"},
       {label:"最低 HVI (最佳)", value: best?pct(best.hvi):"—", sub: best?best.model:"—"},
       {label:"最高 HVI (最差)", value: worst?pct(worst.hvi):"—", sub: worst?worst.model:"—"},
-      {label:"平均 HVI", value: pct(avg), sub:"全模型均值"},
+      {label:"平均 HVI / 覆盖率", value: pct(avg), sub:"覆盖率 "+pct(avgCov)},
     ];
     kpiBox.innerHTML = cards.map(c=>`<div class="kpi"><div class="k-label">${c.label}</div><div class="k-value">${c.value}</div><div class="k-sub">${c.sub}</div></div>`).join("");
   }
@@ -53,12 +68,38 @@
         <td><span class="rank-badge">${rankCell}</span></td>
         <td><strong>${r.model}</strong></td>
         <td class="num">${hviCell}</td>
-        <td class="num">${r.citations}</td>
-        <td class="num">${pct(r.crfi||0)}</td>
-        <td class="num">${pct(r.temporal||0)}</td>
+        <td class="num">${num(r.crfi!=null?pct(r.crfi):null)}</td>
+        <td class="num">${num(r.coverage!=null?pct(r.coverage):null)}</td>
+        <td class="num">${num(r.integrity!=null?pct(r.integrity):null)}</td>
+        <td class="num">${num(r.temporal!=null?pct(r.temporal):null)}</td>
+        <td class="num">${r.api_errors||0}</td>
         <td>${mv}</td>
       </tr>`;
     }).join("");
+  }
+
+  // ---- diff vs previous week ----
+  const diffEl = document.getElementById("diff-view");
+  if (HISTORY.length >= 2) {
+    const cur = HISTORY[HISTORY.length-1], prev = HISTORY[HISTORY.length-2];
+    document.getElementById("diff-sub").textContent = `( ${prev.date} → ${cur.date} )`;
+    const prevMap = {}; (prev.leaderboard||[]).forEach(r=> prevMap[r.model]=r);
+    const rows = (cur.leaderboard||[]).filter(r=>r.hvi!=null && prevMap[r.model] && prevMap[r.model].hvi!=null)
+      .map(r=>{
+        const d = (r.hvi - prevMap[r.model].hvi) * 100; // percentage points
+        const up = d > 0.5, down = d < -0.5;
+        const color = up ? "#dc2626" : down ? "#16a34a" : "#94a3b8";
+        const arrow = up ? "▲" : down ? "▼" : "—";
+        const w = Math.min(100, Math.abs(d)*4);
+        return `<div class="diff-row">
+          <span class="diff-model">${r.model}</span>
+          <span class="diff-bar"><span style="width:${w}%;background:${color}"></span></span>
+          <span class="diff-delta" style="color:${color}">${arrow} ${Math.abs(d).toFixed(1)}pp</span>
+        </div>`;
+      });
+    diffEl.innerHTML = rows.length ? rows.join("") : '<p style="color:#647488">无可对比数据。</p>';
+  } else if (diffEl) {
+    diffEl.innerHTML = '<p style="color:#647488">需至少两期数据方可对比。</p>';
   }
 
   // ---- trend chart ----
@@ -100,7 +141,7 @@
     });
   }
 
-  // ---- matrix ----
+  // ---- matrix (with answer drill-down) ----
   const M = W.matrix || {};
   const mDate = document.getElementById("matrix-date");
   if (mDate) mDate.textContent = M.date ? "( "+M.date+" )" : "";
@@ -117,9 +158,13 @@
       mm.forEach(m=>{
         const cell = (md[q.qid]||{})[m] || {status:"?"};
         const st = cell.status;
-        const cls = ["✓"].includes(st)?"ok":["?","·"].includes(st)?(st==="·"?"na":"unk"):"bad";
+        const cls = statusClass(st);
         const tip = cell.detail ? `<span class="tip">${cell.detail}</span>` : "";
-        html += `<td><span class="cell ${cls}">${st}</span>${tip}</td>`;
+        const akey = q.qid + "|" + m;
+        const ansObj = ANSWERS[akey];
+        const ansHtml = ansObj && ansObj.answer
+          ? `<div class="ans collapsed" id="ans-${akey}">${ansObj.answer.replace(/</g,"&lt;")}</div>` : "";
+        html += `<td><span class="cell ${cls}" onclick="document.getElementById('ans-${akey}').classList.toggle('collapsed')">${st}</span>${tip}${ansHtml}</td>`;
       });
       html += "</tr>";
     });
