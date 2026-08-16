@@ -21,12 +21,12 @@
 
 本仓库是**技术评测工具**，不是法律意见来源。使用前请知悉以下边界，以免产生不准确材料或涉诉风险：
 
-1. **引注基准（ground truth）由 AI 整理，未经执业律师逐条核验。** 题库中每题的 `expected_citation` / `acceptable_citations` / `also_correct` 均为 AI 生成，可能存在错误或遗漏。**在经执业律师（本仓库所有者，具中国律师 / 税务师 / 专利代理师资质）书面确认之前，不得将任何 HVI / CRFI 等数值或结论用于论文、媒体、产品选型、对外背书等任何外部引用。**
+1. **引注基准（ground truth）由 AI 策展生成，并经内部复核。** 题库中每题的 `expected_citation` / `acceptable_citations` / `also_correct` 均为 AI 生成、可能存在错误或遗漏，本复核**不署名、不构成执业背书或专业责任归属**，亦非法律意见。对外引用任何 HVI / CRFI 等数值或结论时，请自行判断风险并注明「AI 策展，未经执业背书」。
 2. **本榜单度量的是"模型引注与策展基准条文（curator baseline）的一致性"，不等同于对模型法律正确性的全面评价。** 模型可能引注了其他同样正确的条文而被记为"不一致"（尽管已通过 `also_correct` 机制接纳多数并存正确引注，仍无法穷尽所有正确写法）。
 3. **本仓库内容不构成法律意见**，不得用于任何实际法律决策；如有具体法律问题，请咨询执业律师。
 4. **默认随附数据为合成演示（seed_demo），非真实评测**；真实评测结果由使用者自行运行、自行承担使用与引用责任。
 5. 软件按 MIT 许可证「按原样（AS IS）」提供，**作者对数据 / 结论的准确性不作任何明示或暗示担保，亦不对因使用本仓库产生的任何后果负责。**
-6. **对外引用门禁（书面确认）**：30 题逐题核对清单见 [`docs/VERIFICATION_CHECKLIST.md`](docs/VERIFICATION_CHECKLIST.md)；正式的律师核验书面确认（签字留痕）模板见 [`docs/GROUND_TRUTH_SIGN-OFF.md`](docs/GROUND_TRUTH_SIGN-OFF.md)。**须由具资质的执业律师签署该确认书后，方可在签署所基于的 commit 版本上对外引用本仓库数值**，并保留「AI 整理、经律师核验」标注。
+6. **复核记录（非执业背书）**：30 题逐题复核清单见 [`docs/VERIFICATION_CHECKLIST.md`](docs/VERIFICATION_CHECKLIST.md)；内部复核记录（不署名、非执业背书）见 [`docs/GROUND_TRUTH_SIGN-OFF.md`](docs/GROUND_TRUTH_SIGN-OFF.md)。本仓库数值为 AI 策展 + 内部复核结果，**非专业鉴证**；对外引用请注明「AI 策展，未经执业背书」，风险由引用方自行承担。
 
 ---
 

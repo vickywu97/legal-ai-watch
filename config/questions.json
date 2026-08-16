@@ -1,5 +1,5 @@
 {
-  "_comment": "评测题库. 每题含 zh/en 双语 prompt, expected_citation 均为现行有效法条(最新修正版). 跨版本/跨法等价关系统一在 config/statute_equivalence.json 维护, 本题仅保留个别需带论证的一次性 acceptable_citations. 时序陷阱题(expected 为现行法, 模型若引已废止旧法将被判 ✗T)用于检验时序幻觉. 另设 also_correct 字段收纳'不同但同样正确'的引注, 避免把正确回答误判为幻觉(✗MA). ⚠️ 全部 expected_citation / acceptable_citations / also_correct 均由 AI 整理生成, 未经执业律师逐条核验; 在经执业律师(本仓库所有者, 具中国律师/税务师/专利代理师资质)书面确认前, 不得将其 HVI/CRFI 等数值或结论用于任何外部引用(论文/媒体/产品选型/背书).",
+  "_comment": "评测题库. 每题含 zh/en 双语 prompt, expected_citation 均为现行有效法条(最新修正版). 跨版本/跨法等价关系统一在 config/statute_equivalence.json 维护, 本题仅保留个别需带论证的一次性 acceptable_citations. 时序陷阱题(expected 为现行法, 模型若引已废止旧法将被判 ✗T)用于检验时序幻觉. 另设 also_correct 字段收纳'不同但同样正确'的引注, 避免把正确回答误判为幻觉(✗MA). ⚠️ 全部 expected_citation / acceptable_citations / also_correct 均为 AI 策展生成, 并经内部复核(非执业鉴证、不署名、不产生任何专业责任), 但仍非法律意见; 对外引用本仓库 HVI/CRFI 等数值或结论时, 请自行判断风险并注明「AI 策展, 未经执业背书」.",
   "version": "2026-08-14",
   "questions": [
     {
@@ -79,8 +79,7 @@
         {"citation": "《个人所得税专项附加扣除暂行办法》第19条", "justification": "住房租金专项附加扣除（第六章 住房租金 第17–19条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
         {"citation": "《个人所得税专项附加扣除暂行办法》第20条", "justification": "赡养老人专项附加扣除（第七章 赡养老人 第20–22条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
         {"citation": "《个人所得税专项附加扣除暂行办法》第21条", "justification": "赡养老人专项附加扣除（第七章 赡养老人 第20–22条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第22条", "justification": "赡养老人专项附加扣除（第七章 赡养老人 第20–22条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第23条", "justification": "3岁以下婴幼儿照护专项附加扣除（2022年新增，第23条起），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"}
+        {"citation": "《个人所得税专项附加扣除暂行办法》第22条", "justification": "赡养老人专项附加扣除（第七章 赡养老人 第20–22条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"}
       ],
       "verifiable": true
     },
