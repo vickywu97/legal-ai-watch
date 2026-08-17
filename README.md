@@ -26,7 +26,7 @@
 3. **本仓库内容不构成法律意见**，不得用于任何实际法律决策；如有具体法律问题，请咨询执业律师。
 4. **默认随附数据为合成演示（seed_demo），非真实评测**；真实评测结果由使用者自行运行、自行承担使用与引用责任。
 5. 软件按 MIT 许可证「按原样（AS IS）」提供，**作者对数据 / 结论的准确性不作任何明示或暗示担保，亦不对因使用本仓库产生的任何后果负责。**
-6. **复核记录（非执业背书）**：30 题逐题复核清单见 [`docs/VERIFICATION_CHECKLIST.md`](docs/VERIFICATION_CHECKLIST.md)；内部复核记录（不署名、非执业背书）见 [`docs/GROUND_TRUTH_SIGN-OFF.md`](docs/GROUND_TRUTH_SIGN-OFF.md)。本仓库数值为 AI 策展 + 内部复核结果，**非专业鉴证**；对外引用请注明「AI 策展，未经执业背书」，风险由引用方自行承担。
+6. **复核记录（非执业背书）**：31 题逐题复核清单见 [`docs/VERIFICATION_CHECKLIST.md`](docs/VERIFICATION_CHECKLIST.md)；内部复核记录（不署名、非执业背书）见 [`docs/GROUND_TRUTH_SIGN-OFF.md`](docs/GROUND_TRUTH_SIGN-OFF.md)。本仓库数值为 AI 策展 + 内部复核结果，**非专业鉴证**；对外引用请注明「AI 策展，未经执业背书」，风险由引用方自行承担。
 
 ---
 

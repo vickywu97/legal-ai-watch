@@ -10,6 +10,12 @@ Each line follows: `YYYY-MM-DD · <scope> · <summary>`
 
 ---
 
+## 2026-08-17 · questions · 新增 qid31 + 核验引擎修复 + 文档计数同步
+- **题库 30 → 31 题**：新增 qid 31（有限责任公司股权对外转让）——修正旧版「须经多少股东同意」题（题干沿用 2018 公司法第71条旧规则，与新法第84条已删除该前置程序不符）；新题问「其他股东享有什么权利」，预期引《公司法》第84条（书面通知 + 优先购买权），旧法第71条作 `acceptable_citations` 容错；`config/statute_equivalence.json` 新增 `company-equity-transfer` 等价组（第71条 → 第84条）。
+- **核验引擎修复（真实缺陷）**：`scripts/verifier.py` 的 `acceptable_citations` 分支原逻辑「只要题目配置了可接受旧条号（Q9 第43条 / Q10 第177条 / Q31 第71条），无论模型实际引注为何均判 ✓」，掩盖幻觉、压低 HVI；改为必须模型**实际引注**该可接受条文（或归一化到其 canonical）才判 ✓。新增 2 个回归测试锁定（共 18 个 verifier 测试通过）。
+- **文档计数同步（30 → 31）**：README、VERIFICATION_CHECKLIST（补第 31 行）、GROUND_TRUTH_REVIEW 结论、METHODOLOGY（样本点 270 → 279、KPI 口径 0–31）统一更新；`dashboard/status.json` 与 `dashboard/data/` 由 `generate_dashboard.py` 按 `len(questions)` 自动生成，无需手改。
+- 提交：`241af25`（已推送 origin/main）。
+
 ## 2026-08-13 · docs · 全局一致性排查 + DEPLOY.md
 - **新增 docs/DEPLOY.md**：推送排错（SSH-over-443）、CI 架构（只发 gh-pages）、手动/每周触发、取样管线、等价引注闸门、本地预览、常见故障表、密钥清单，一页式运维手册。
 - **全局一致性修复（一次性，不再打补丁）**：

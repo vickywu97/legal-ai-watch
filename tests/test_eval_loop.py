@@ -44,7 +44,7 @@ def test_missing_key_skips_model(tmp_path, monkeypatch):
 
 def test_auth_error_failfast(tmp_path, monkeypatch):
     """A 401 on the first question should abort the model after exactly 1 call,
-    and every question should still be recorded as ✗ERR (api_errors == 30)."""
+    and every question should still be recorded as ✗ERR (api_errors == N_QUESTIONS)."""
     state = {"n": 0}
 
     def fake_call(model_cfg, prompt, api_key, system_prompt, **kw):
@@ -64,7 +64,7 @@ def test_auth_error_failfast(tmp_path, monkeypatch):
 
 def test_429_not_failfast(tmp_path, monkeypatch):
     """A rate-limit (429) should NOT abort the model (transient); every question
-    is still attempted and recorded as ✗ERR (api_errors == 30)."""
+    is still attempted and recorded as ✗ERR (api_errors == N_QUESTIONS)."""
     state = {"n": 0}
 
     def fake_call(model_cfg, prompt, api_key, system_prompt, **kw):
