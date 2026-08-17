@@ -295,6 +295,20 @@
       "prompt_en": "What conditions are required for a suspended sentence? Cite the specific provision.",
       "expected_citation": "《刑法》第72条",
       "verifiable": true
+    },
+    {
+      "qid": 31,
+      "domain": "公司法",
+      "prompt": "有限责任公司股东向股东以外的人转让股权，其他股东享有什么权利？请引用具体法条。",
+      "prompt_en": "When an LLC shareholder transfers equity to a person other than a shareholder, what rights does another shareholder have? Cite the specific provision.",
+      "expected_citation": "《公司法》第84条",
+      "acceptable_citations": [
+        {
+          "citation": "《公司法》第七十一条",
+          "justification": "2018 公司法（修订前）第七十一条与 2023 公司法第八十四条规制对象相同：均涉及有限责任公司股权对外转让。但注意旧法第七十一条要求『经其他股东过半数同意』，新法第八十四条已删除该前置同意程序，改为『书面通知 + 其他股东优先购买权』（不再要求人数同意）。模型引旧条号但实质指向股权转让权利，属条号版本差异而非幻觉，按等价引注放过；若仍主张『须经其他股东过半数同意』则属旧法误用（本 watch 无 as_of 门禁，由 acceptable_citations 容许）。"
+        }
+      ],
+      "verifiable": true
     }
   ]
 }

@@ -133,6 +133,32 @@ def test_verify_equivalent_old_article_is_not_temporal():
     assert r["status"] == "✓"
 
 
+def test_acceptable_citations_requires_actual_citation():
+    """A wrong citation on a question that HAS acceptable_citations must NOT be
+    auto-passed. Regression guard for the free-pass bug (the acceptable_citations
+    branch must check the model's actual cited provision, not just that the
+    acceptable article's canonical equals the expected)."""
+    e = load_eq()
+    # Q9 expected 66, acceptable 43. Citing a wrong article (99) -> ✗MA.
+    r = verify(q(9, "《公司法》第66条"),
+               "根据《公司法》第九十九条，由董事会决定。", e)
+    assert r["status"] == "✗MA"
+    # Citing the acceptable old article (43) -> ✓.
+    r2 = verify(q(9, "《公司法》第66条"),
+                "根据《公司法》第四十三条，须经三分之二以上表决权通过。", e)
+    assert r2["status"] == "✓"
+
+
+def test_q31_equity_transfer_scoring():
+    """Q31 (newly added): current law 84 -> ✓; old-law acceptable 71 -> ✓;
+    a wrong article -> ✗MA (not auto-passed via acceptable_citations)."""
+    e = load_eq()
+    q31 = _real_question(31)
+    assert verify(q31, "根据《公司法》第84条，其他股东在同等条件下有优先购买权。", e)["status"] == "✓"
+    assert verify(q31, "根据《公司法》第七十一条，经其他股东过半数同意方可转让。", e)["status"] == "✓"
+    assert verify(q31, "根据《公司法》第20条，正当防卫。", e)["status"] == "✗MA"
+
+
 def test_verify_english_citation():
     e = load_eq()
     r = verify(q(1, "《民法典》第584条"),
