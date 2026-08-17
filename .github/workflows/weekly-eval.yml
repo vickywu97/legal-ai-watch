@@ -14,10 +14,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout (with submodule)
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          # Public eval does NOT need the private legal-hallucination-bench
+          # submodule: run_eval.py reads config/questions.json committed in
+          # main, and the `sync_questions.py --source submodule` step is
+          # best-effort (`|| echo "sync skipped"`) so it safely no-ops when the
+          # submodule is absent. Recursive checkout of a private cross-repo
+          # submodule intermittently fails under GITHUB_TOKEN and aborts the run.
+          submodules: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
