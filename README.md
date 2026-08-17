@@ -119,6 +119,18 @@ python scripts/generate_dashboard.py --data data/ --output dashboard/
 python scripts/run_eval.py --date 2026-08-08 --locale en --output data/ --samples 3
 ```
 
+### 省钱预检流程（避免盲跑全量烧 token）
+
+全量评测 = 题数 × 模型数 × 取样数 次**真模型 API 调用**，每次都花钱。请按下面顺序，**前两步免费/极便宜**，只有最后一步才花全量钱：
+
+1. **本地回归门禁（免费）**：`python -m pytest tests/ -q`。CI 在付费调用前也会自动跑这一关，逻辑 bug 在本地就能抓出。
+2. **密钥预检（每密钥仅 1 次极简调用）**：`python scripts/test_provider_key.py`。直接告诉你哪个密钥 401/429/缺失，**不等到跑完 279 次调用才发现**。
+   - 在 Mac 上跑需先 `export` 对应密钥；或在 GitHub Actions 用下一步的 smoke 代替。
+3. **smoke 烟雾测试（约 5/31 成本，不污染看板）**：在 `Actions → Manual Model Evaluation → Run workflow` 里把 **`scope` 选 `smoke`**（只跑前 5 题，真·API 端到端验证密钥+管线，但**不部署、不更新公开排行榜**）。确认各模型都拿到真实分数（而非 ✗ERR）后再走第 4 步。
+4. **全量评测（full，唯一花全量钱的步骤）**：`scope` 选 `full`（默认），或本地 `python scripts/run_eval.py --date <日期> --output data/ --samples 3`。
+
+> 经验：换密钥/加模型后，**先 smoke 再 full**，最多两次付费运行即可确认无误；不要直接盲跑 full。
+
 ---
 
 ## 📁 仓库结构

@@ -15,6 +15,14 @@ on:
         description: 'Samples per (model, question) for variance suppression. Higher = more stable HVI, more API calls.'
         required: false
         default: '3'
+      scope:
+        description: 'Run scope. full = all questions, updates public leaderboard. smoke = first 5 questions, cheap real-API validation, NO deploy (saves tokens after a key change).'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - smoke
 
 permissions:
   contents: write
@@ -70,18 +78,24 @@ jobs:
           [ -z "$EVAL_DATE" ] && EVAL_DATE=$(date +%Y-%m-%d)
           SAMPLES="${{ github.event.inputs.samples }}"
           [ -z "$SAMPLES" ] && SAMPLES=3
-          python scripts/run_eval.py --date "$EVAL_DATE" --output data/ --samples "$SAMPLES"
+          SCOPE="${{ github.event.inputs.scope }}"
+          [ -z "$SCOPE" ] && SCOPE=full
+          if [ "$SCOPE" = "smoke" ]; then LIMIT=5; else LIMIT=0; fi
+          python scripts/run_eval.py --date "$EVAL_DATE" --output data/ --samples "$SAMPLES" --limit "$LIMIT"
 
       - name: Generate dashboard
+        if: ${{ github.event.inputs.scope != 'smoke' }}
         run: python scripts/generate_dashboard.py --data data/ --output dashboard/
 
       - name: Bundle data into dashboard for gh-pages
         # The dashboard's audit-report links point at data/answers/... which is
         # NOT published by `publish_dir: ./dashboard`. Copy data/ into dashboard/
         # so those links resolve on the live GitHub Pages site (otherwise 404).
+        if: ${{ github.event.inputs.scope != 'smoke' }}
         run: cp -r data dashboard/data
 
       - name: Deploy to GitHub Pages
+        if: ${{ github.event.inputs.scope != 'smoke' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

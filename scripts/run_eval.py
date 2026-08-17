@@ -30,6 +30,7 @@ Usage:
   python scripts/run_eval.py --date 2026-08-14 --output data/
   python scripts/run_eval.py --date 2026-08-14 --output data/ --locale en
   python scripts/run_eval.py --demo   # 不调 API, 用 seeded 数据重算
+  python scripts/run_eval.py --limit 5   # 烟雾测试: 仅前5题, 真·API, 不碰公开看板
 """
 from __future__ import annotations
 
@@ -262,14 +263,24 @@ def load_json(path: Path):
 
 
 def run_evaluation(eval_date: str, output_root: Path, demo: bool = False,
-                   samples: int = 3, locale: str = "zh"):
+                   samples: int = 3, locale: str = "zh", limit: int = 0):
     models = load_json(CONFIG_DIR / "models.json")["models"]
     questions = load_json(CONFIG_DIR / "questions.json")["questions"]
     eq = Equivalence.load(EQUIV_PATH)
     system_prompt = _load_prompts(locale)
 
-    day_dir = output_root / "answers" / eval_date
+    # smoke 模式: 只评测前 `limit` 题, 结果写到 data/smoke/, 且**不更新公开排行榜
+    # 历史**。用于密钥换更后做一次"真·API 端到端"的极便宜验证, 既不花全量调用的钱,
+    # 也不会污染公开看板。full 模式 (limit=0) 行为与以往完全一致。
+    smoke = (not demo) and (limit and limit > 0)
+    if smoke:
+        questions = questions[:limit]
+
+    day_dir = (output_root / "smoke" / eval_date) if smoke else (output_root / "answers" / eval_date)
     day_dir.mkdir(parents=True, exist_ok=True)
+    if smoke:
+        print(f"[smoke] limit={limit}: 仅评测前 {len(questions)} 题; 结果写入 "
+              f"data/smoke/{eval_date}/, 不更新公开排行榜历史。", flush=True)
 
     answers_path = day_dir / "answers.jsonl"
     verifications_path = day_dir / "verifications.jsonl"
@@ -366,11 +377,13 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False,
         for r in answer_records:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
-    _finalize(output_root, model_results, eval_date, verifications_path)
+    _finalize(output_root, model_results, eval_date, verifications_path,
+              write_history=not smoke)
     return build_leaderboard(model_results)
 
 
-def _finalize(output_root: Path, model_results: dict, eval_date: str, verifications_path: Path):
+def _finalize(output_root: Path, model_results: dict, eval_date: str, verifications_path: Path,
+              write_history: bool = True):
     day_dir = verifications_path.parent
     models = load_json(CONFIG_DIR / "models.json")["models"]
     questions = load_json(CONFIG_DIR / "questions.json")["questions"]
@@ -389,6 +402,13 @@ def _finalize(output_root: Path, model_results: dict, eval_date: str, verificati
         json.dump({"date": eval_date, "leaderboard": leaderboard, "domain_hvi": domain_hvi},
                   f, ensure_ascii=False, indent=2)
 
+    print(f"[done] wrote {verifications_path}, {day_dir / 'leaderboard.json'}")
+
+    if not write_history:
+        # smoke 模式: 不污染公开排行榜历史, 看板读不到本次结果。
+        print(f"[smoke] 跳过 {output_root / 'leaderboard_history.json'} 写入（smoke 模式不更新公开看板）")
+        return
+
     history_path = output_root / "leaderboard_history.json"
     history = load_json(history_path) if history_path.exists() else {
         "updated_at": date_cls.today().isoformat(), "models": [], "domains": [], "history": []}
@@ -406,7 +426,6 @@ def _finalize(output_root: Path, model_results: dict, eval_date: str, verificati
     with open(history_path, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
 
-    print(f"[done] wrote {verifications_path}, {day_dir / 'leaderboard.json'}")
     print(f"[done] updated {history_path}")
 
 
@@ -481,11 +500,15 @@ def main():
     ap.add_argument("--demo", action="store_true", help="demo mode: no API calls (seeded verifications required)")
     ap.add_argument("--samples", type=int, default=3, help="samples per (model, question) (default 3)")
     ap.add_argument("--locale", choices=["zh", "en"], default="zh", help="question/prompt locale")
+    ap.add_argument("--limit", type=int, default=0,
+                    help="smoke test: evaluate only the first N questions "
+                         "(writes to data/smoke, skips public leaderboard history)")
     args = ap.parse_args()
 
     output_root = Path(args.output)
     output_root.mkdir(parents=True, exist_ok=True)
-    run_evaluation(args.date, output_root, demo=args.demo, samples=args.samples, locale=args.locale)
+    run_evaluation(args.date, output_root, demo=args.demo, samples=args.samples,
+                   locale=args.locale, limit=args.limit)
 
 
 if __name__ == "__main__":
