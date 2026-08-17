@@ -307,12 +307,32 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False,
     for model in models:
         if not model.get("enabled", True):
             continue
+        api_key_env = model["api_key_env"]
+        api_key = os.environ.get(api_key_env, "")
+        if not api_key:
+            # 密钥缺失：直接跳过该模型，避免 90 行空 ✗ERR 污染公开榜单。
+            # 配置好对应 CI Secret / 本地环境变量后，下轮会自动纳入评测。
+            print(f"[skip] model={model['id']}: 环境变量 {api_key_env} 为空/未设置，跳过"
+                  f"（不调用 API、不写入空结果）。请配置该密钥后重跑。", flush=True)
+            continue
         min_interval = float(model.get("min_interval_seconds", 0.5))
         print(f"[eval] model={model['id']} (sampling x{samples}, locale={locale})", flush=True)
         verifs = []
+        # 认证类错误（401/403/404/缺密钥）整轮 fail-fast：密钥不会在单次运行中途恢复，
+        # 没必要为每个问题重复烧 90 次无效调用；首题命中即跳过剩余题，错误文本落盘。
+        auth_failed = False
+        auth_err_msg = ""
         for q in questions:
+            if auth_failed:
+                # 复用同一认证错误文本，标注整题 ✗ERR，避免重复调用 API
+                verifs.append({
+                    "qid": q["qid"], "domain": q.get("domain", "未分类"),
+                    "question": q["prompt"], "model": model["id"],
+                    "status": "✗ERR", "detail": auth_err_msg, "citations": [],
+                    "_api_err": samples, "_counts": {"✗ERR": samples},
+                })
+                continue
             prompt = q.get("prompt_en") if (locale == "en" and q.get("prompt_en")) else q["prompt"]
-            api_key = os.environ.get(model["api_key_env"], "")
             samples_results = []
             for s_idx in range(samples):
                 answer = ""
@@ -321,7 +341,11 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False,
                     v = verify_answer(q, answer, eq)
                 except ModelCallError as e:
                     print(f"  [error] {model['id']} q{q['qid']} sample{s_idx+1}: {e}", flush=True)
-                    v = {"status": "✗ERR", "detail": str(e), "citations": []}
+                    msg = str(e)
+                    if "auth/config" in msg or "No API key" in msg:
+                        auth_failed = True
+                        auth_err_msg = msg
+                    v = {"status": "✗ERR", "detail": msg, "citations": []}
                 time.sleep(min_interval)
                 samples_results.append((answer, v))
             agg = aggregate_samples(model["id"], q, samples_results, samples)
@@ -332,6 +356,8 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False,
                 "answers": [a for a, _ in samples_results],
                 "n_samples": samples,
                 "counts": agg["_counts"],
+                # 若本 cell 有取样报错，把错误文本一并落盘，便于在公开看板审计中直接定位原因
+                "error": next((v.get("detail") for a, v in samples_results if v["status"] == "✗ERR"), None),
             })
             verifs.append(agg)
         model_results[model["id"]] = verifs
