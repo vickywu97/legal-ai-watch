@@ -53,6 +53,15 @@ EN_CITATION_RE = re.compile(
     r")",
     re.IGNORECASE,
 )
+# Chinese government documents carry NO article number (they are notices, not
+# codes): 国发〔2022〕8号 / 财税〔2016〕36号. The body is an explicit alternation
+# of known issuing bodies (not a generic CJK run) so preceding context like
+# "依据国发〔…〕" is NOT captured as "依据国发". Accepts fullwidth 〔〕 or halfwidth
+# [] brackets (models occasionally mix them). Real law citations like
+# 《民法典》第584条 (which have 《》第条) are never captured here.
+GOV_DOC_RE = re.compile(
+    r"(国发|国办发|财税|财政部|税务总局|国家税务总局|税总)\s*[〔\[]\s*(\d{4})\s*[〕\]]\s*(\d+)\s*号"
+)
 
 
 def _parse_en(m) -> tuple:
@@ -166,6 +175,11 @@ def parse_ref(cite: str):
         law_raw, article = _parse_en(em)
         law = _en_law_to_cn(law_raw)
         return (law, article) if law else None
+    # Government document (国务院/财税文件): no article number -> article=None.
+    gm = GOV_DOC_RE.search(cite)
+    if gm:
+        doc_id = f"{gm.group(1)}〔{gm.group(2)}〕{gm.group(3)}号"
+        return (doc_id, None)
     return None
 
 
@@ -193,6 +207,9 @@ def extract_citations(text: str) -> list[str]:
         if law is None:
             continue
         out.append(f"《{law}》第{article}条")
+    for gm in GOV_DOC_RE.finditer(text or ""):
+        doc_id = f"{gm.group(1)}〔{gm.group(2)}〕{gm.group(3)}号"
+        out.append(doc_id)
     return out
 
 

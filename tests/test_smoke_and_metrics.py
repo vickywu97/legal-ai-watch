@@ -17,12 +17,14 @@ from run_eval import (
     build_leaderboard,
     run_evaluation,
 )
+from verifier import verify, Equivalence, extract_citations, parse_ref
 
 KEY_ENVS = ["DEEPSEEK_API_KEY", "ZHIPU_API_KEY", "DASHSCOPE_API_KEY", "MOONSHOT_API_KEY"]
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 N_MODELS = sum(1 for m in json.loads((CONFIG_DIR / "models.json").read_text(encoding="utf-8"))["models"]
                if m.get("enabled", True))
 N_QUESTIONS = len(json.loads((CONFIG_DIR / "questions.json").read_text(encoding="utf-8"))["questions"])
+EQ = Equivalence.load(CONFIG_DIR / "statute_equivalence.json")
 
 
 # ---------------------------------------------------------------------------
@@ -151,3 +153,41 @@ def test_full_mode_default_keeps_history(tmp_path, monkeypatch):
 
     assert (tmp_path / "answers" / "2026-08-17" / "verifications.jsonl").exists()
     assert (tmp_path / "leaderboard_history.json").exists()
+
+
+# ---------------------------------------------------------------------------
+# Government-document citations (国发〔2022〕8号 etc.) — article-less parsing
+# ---------------------------------------------------------------------------
+def test_gov_doc_parsing():
+    """A 国务院文件 citation has no article; it must parse to (doc_id, None)
+    and be extracted verbatim, with both fullwidth and halfwidth brackets."""
+    assert parse_ref("国发〔2022〕8号") == ("国发〔2022〕8号", None)
+    assert parse_ref("财税〔2016〕36号") == ("财税〔2016〕36号", None)
+    # halfwidth brackets must normalize to the same doc_id
+    assert parse_ref("国发[2022]8号") == ("国发〔2022〕8号", None)
+    assert extract_citations("依据国发〔2022〕8号及个税法第六条。") == ["国发〔2022〕8号"]
+    # law citations must NOT be mis-captured as gov docs
+    assert parse_ref("《个人所得税法》第6条") == ("个人所得税法", 6)
+
+
+def test_q6_gov_doc_accepted_as_also_correct():
+    """Q6: a model that lists the 7th item and cites ONLY 国发〔2022〕8号 must
+    pass (✓) via also_correct — not be silently dropped (·) or falsely ✗MA."""
+    q6 = {
+        "qid": 6,
+        "expected_citation": "《个人所得税法》第6条",
+        "also_correct": [
+            {"citation": "《个人所得税专项附加扣除暂行办法》第5条"},
+            {"citation": "国发〔2022〕8号"},
+        ],
+        "verifiable": True,
+    }
+    ans = "专项附加扣除共7项，含3岁以下婴幼儿照护，依据国发〔2022〕8号设立。"
+    res = verify(q6, ans, EQ)
+    assert res["status"] == "✓", res
+    # regression: a wrong citation still fails
+    wrong = verify(q6, "共6项，依据《刑法》第264条。", EQ)
+    assert wrong["status"] == "✗MA", wrong
+    # the canonical 个税法第6条 answer still passes
+    ok = verify(q6, "依据《个人所得税法》第6条。", EQ)
+    assert ok["status"] == "✓", ok
