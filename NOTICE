@@ -15,10 +15,10 @@ Legal AI Watch — 知识产权与内容来源说明 (NOTICE)
 
 3. 数据与引注基准（ground truth）来源与状态
    - 题库（config/questions.json）中各题的 expected_citation / acceptable_citations
-     / also_correct 均为 **AI 整理生成**，**未经执业律师逐条核验**。
-   - 在经执业律师（本仓库所有者，具中国律师 / 税务师 / 专利代理师资质）
-     书面确认之前，任何 HVI / CRFI 等数值或结论均**不得**用于论文、媒体、
-     产品选型、对外背书等外部引用。
+     / also_correct 均为 **AI 策展生成，并经内部复核**，不署名、不构成执业背书
+     或专业责任归属，亦非法律意见。
+   - 对外引用任何 HVI / CRFI 等数值或结论时，请自行判断风险并注明
+     「AI 策展，未经执业背书」，风险由引用方自行承担。
    - 默认随附数据（dashboard/ 与 data/）为 scripts/seed_demo.py 生成的
      **合成演示样本（synthetic / demo）**，**并非真实模型评测结果**。
 
