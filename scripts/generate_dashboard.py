@@ -163,8 +163,8 @@ def generate(data_root: Path, out_dir: Path):
         "models": len(models),
         "questions": len(questions),
         "history_weeks": len(payload["history"]),
-        "disclaimer": "本看板数值度量模型引注与策展基准条文的一致性，不构成法律意见；引注基准由 AI 整理，未经执业律师逐条核验。外部引用前须经执业律师书面确认。",
-        "ground_truth_status": "ai_curated_pending_lawyer_verification",
+        "disclaimer": "本看板数值度量模型引注与策展基准条文的一致性，不构成法律意见；引注基准由 AI 策展 + 内部复核（不署名、非执业背书、不担责）整理，仍可能存在错误或遗漏，非专业鉴证。对外引用 HVI / CRFI 等数值或结论时，请注明「AI 策展，未经执业背书」，风险自担。",
+        "ground_truth_status": "ai_curated_internal_review",
     }
     (out_dir / "status.json").write_text(json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -197,7 +197,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <body>
 <div class="legal-disclaimer" role="note">
   ⚠️ <b>非法律意见 · 演示/AI整理基准</b>：本看板数值为「模型引注与策展基准条文的一致性」度量，<b>不构成法律意见</b>；
-  引注基准（ground truth）由 AI 整理，<b>未经执业律师逐条核验</b>。在经执业律师书面确认前，<b>不得</b>将任何 HVI / CRFI 数值或结论用于论文、媒体、产品选型或对外背书等外部引用。
+  引注基准（ground truth）由 <b>AI 策展 + 内部复核</b>（不署名、非执业背书、不担责）整理，仍可能存在错误或遗漏。对外引用任何 HVI / CRFI 数值或结论时，请注明「AI 策展，未经执业背书」，<b>风险自担</b>。
 </div>
 <header class="site-header">
   <div class="wrap">

@@ -161,5 +161,5 @@ legal-ai-watch/
 ---
 
 <p align="center">
-  Built with ⚖️ by Vicky Wu · 律师 / 税务师 / 专利代理师 → AI 法律产品
+  Built with ⚖️ by Vicky Wu · 法律 / 税务 / 专利复合背景 → AI 法律产品
 </p>
