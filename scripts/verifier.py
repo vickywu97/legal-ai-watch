@@ -57,10 +57,11 @@ EN_CITATION_RE = re.compile(
 # codes): 国发〔2022〕8号 / 财税〔2016〕36号. The body is an explicit alternation
 # of known issuing bodies (not a generic CJK run) so preceding context like
 # "依据国发〔…〕" is NOT captured as "依据国发". Accepts fullwidth 〔〕 or halfwidth
-# [] brackets (models occasionally mix them). Real law citations like
-# 《民法典》第584条 (which have 《》第条) are never captured here.
+# [] brackets (models occasionally mix them), and an optional 第 before the
+# serial (国发〔2022〕第8号). Real law citations like 《民法典》第584条 (which have
+# 《》第条) are never captured here.
 GOV_DOC_RE = re.compile(
-    r"(国发|国办发|财税|财政部|税务总局|国家税务总局|税总)\s*[〔\[]\s*(\d{4})\s*[〕\]]\s*(\d+)\s*号"
+    r"(国发|国办发|财税|财政部|税务总局|国家税务总局|税总)\s*[〔\[]\s*(\d{4})\s*[〕\]]\s*(?:第)?\s*(\d+)\s*号"
 )
 
 

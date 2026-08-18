@@ -163,6 +163,8 @@ def test_gov_doc_parsing():
     and be extracted verbatim, with both fullwidth and halfwidth brackets."""
     assert parse_ref("国发〔2022〕8号") == ("国发〔2022〕8号", None)
     assert parse_ref("财税〔2016〕36号") == ("财税〔2016〕36号", None)
+    # optional 第 before serial must normalize to the same doc_id
+    assert parse_ref("国发〔2022〕第8号") == ("国发〔2022〕8号", None)
     # halfwidth brackets must normalize to the same doc_id
     assert parse_ref("国发[2022]8号") == ("国发〔2022〕8号", None)
     assert extract_citations("依据国发〔2022〕8号及个税法第六条。") == ["国发〔2022〕8号"]
@@ -185,6 +187,9 @@ def test_q6_gov_doc_accepted_as_also_correct():
     ans = "专项附加扣除共7项，含3岁以下婴幼儿照护，依据国发〔2022〕8号设立。"
     res = verify(q6, ans, EQ)
     assert res["status"] == "✓", res
+    # the 第-serial variant must also match Q6's also_correct
+    res_d = verify(q6, "第7项依据国发〔2022〕第8号设立。", EQ)
+    assert res_d["status"] == "✓", res_d
     # regression: a wrong citation still fails
     wrong = verify(q6, "共6项，依据《刑法》第264条。", EQ)
     assert wrong["status"] == "✗MA", wrong
