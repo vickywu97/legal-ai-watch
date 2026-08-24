@@ -78,10 +78,10 @@ Legal AI Watch 用一套**可验证引注核验引擎**来回答这个问题，�
 
 | 仓库 | 职责 |
 |------|------|
-| [`legal-hallucination-bench`](https://github.com/vickywu97/legal-hallucination-bench)（私有仓库，需授权访问） | 评测引擎、知识库、题库、评分逻辑 |
+| [`legal-hallucination-bench`](https://github.com/vickywu97/legal-hallucination-bench)（开源仓库 · MIT） | 评测引擎、知识库、题库、评分逻辑 |
 | **`legal-ai-watch`（本仓库）** | 自动运行评测、生成 Dashboard、发布排行榜、运营 |
 
-本仓库的**实际评测与看板生成完全不依赖 submodule**：题库来自本仓库自带的 [`config/questions.json`](config/questions.json)，核验引擎 [`scripts/verifier.py`](scripts/verifier.py) 为本仓库自带的官方方法学实现。`legal-hallucination-bench` 仅作为**可选的题库上游源**被 [`scripts/sync_questions.py`](scripts/sync_questions.py) 引用（用于把上游最新题库同步进本仓库）；它是**私有仓库**，未授权者 `git clone` 时无需也无法拉取它，演示与评测照常可跑。
+本仓库的**实际评测与看板生成完全不依赖 submodule**：题库来自本仓库自带的 [`config/questions.json`](config/questions.json)，核验引擎 [`scripts/verifier.py`](scripts/verifier.py) 为本仓库自带的官方方法学实现。`legal-hallucination-bench` 是**开源仓库（MIT）**，仅作为**可选的题库上游源**被 [`scripts/sync_questions.py`](scripts/sync_questions.py) 引用（用于把上游最新题库同步进本仓库）；未拉取时（如离线）演示与评测照常可跑。
 
 ---
 
