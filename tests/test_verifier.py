@@ -195,3 +195,12 @@ def test_repealed_predecessors_declared_in_repealed_laws():
             if p not in raw.get("repealed_laws", []):
                 missing.append((law, p))
     assert not missing, f"repealed_predecessors not declared in repealed_laws: {missing}"
+
+def test_hallucination_statuses_exactly_ma_and_t():
+    # Regression guard: the deterministic verifier only emits ✗MA and ✗T as
+    # hallucinations. ✗NF / ✗F are intentionally NOT produced (content-faithfulness
+    # / bare factual errors would need an LLM judge, out of scope). This locks the
+    # taxonomy so dead status labels cannot be re-introduced silently.
+    assert HALLUCINATION_STATUSES == {"✗MA", "✗T"}
+    assert "✗NF" not in HALLUCINATION_STATUSES
+    assert "✗F" not in HALLUCINATION_STATUSES
