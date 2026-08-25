@@ -108,21 +108,18 @@ def gen_latest_answers(history, questions):
                 answer = (f"根据{expect_dom_lead(dom)}{expected}的规定，"
                           f"{q['prompt'][:18]}……该条文内容如下，适用结论成立。")
             else:
-                # pick a hallucination subtype
-                sub = random.choice(["✗MA", "✗NF", "✗F"])
+                # pick a hallucination subtype — only statuses the verifier
+                # actually emits (✗MA made-up article / ✗T temporal-version).
+                sub = random.choice(["✗MA", "✗T"])
                 if sub == "✗MA":
                     wrong = fake_citation(expected)
                     status = "✗MA"
                     detail = f"编造/不存在的引注 {wrong}"
                     answer = f"根据{wrong}的规定，{q['prompt'][:18]}……"
-                elif sub == "✗NF":
-                    status = "✗NF"
-                    detail = f"引注存在但内容不符 (期望 {expected})"
-                    answer = f"根据{expected}的规定，(错误转述了条文内容)……"
-                else:
-                    status = "✗F"
-                    detail = "事实性错误"
-                    answer = f"根据{expect_dom_lead(dom)}{expected}的规定，(与事实相悖的推论)……"
+                else:  # ✗T temporal / version hallucination
+                    status = "✗T"
+                    detail = f"援引已废止/旧版本法条（期望现行法 {expected}）"
+                    answer = f"根据{expected}（已废止旧版）的规定，{q['prompt'][:18]}……"
             answers.append({"model": m, "qid": q["qid"], "answer": answer})
             verifications.append({
                 "qid": q["qid"], "domain": dom, "question": q["prompt"],

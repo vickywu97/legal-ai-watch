@@ -179,7 +179,7 @@ def verify_answer(question: dict, answer: str, eq: Equivalence) -> dict:
 # Tie-break priority for the *displayed* per-question verdict. Conservative for a
 # hallucination-watch board: a hallucination verdict outranks a correct one, and
 # an explicit API error (✗ERR) is surfaced when no hallucination is present.
-_STATUS_PRIORITY = ["✗MA", "✗NF", "✗F", "✗T", "✗ERR", "✓", "·", "?"]
+_STATUS_PRIORITY = ["✗MA", "✗T", "✗ERR", "✓", "·", "?"]
 
 
 def aggregate_samples(model_id: str, question: dict, samples_results, n_samples: int) -> dict:
@@ -441,7 +441,7 @@ def build_leaderboard(model_results: dict) -> list[dict]:
         total_engaged = correct + wrong + nocite
 
         cited_questions = sum(1 for v in verifs
-                              if v["status"] in {"✓", "✗MA", "✗NF", "✗F", "✗T"})
+                              if v["status"] in {"✓", "✗MA", "✗T"})
 
         if total_cited == 0:
             # Model cited nothing verifiable across all samples → "未作答".

@@ -256,8 +256,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <p class="legend">
       <span class="lg ok">✓ 正确</span>
       <span class="lg bad">✗MA 编造/错引法条</span>
-      <span class="lg bad">✗NF 内容不符</span>
-      <span class="lg bad">✗F 事实错误</span>
       <span class="lg bad">✗T 时序幻觉(引已废止旧法)</span>
       <span class="lg err">✗ERR 接口失败</span>
       <span class="lg unk">? 无法判定</span>
@@ -402,7 +400,7 @@ JS = """
     if (st === "✗ERR") return "err";
     if (st === "✗T") return "temporal";
     if (["?","·"].includes(st)) return st === "·" ? "na" : "unk";
-    return "bad"; // ✗MA / ✗NF / ✗F
+    return "bad"; // ✗MA / ✗T
   }
 
   // ---- header / freshness ----

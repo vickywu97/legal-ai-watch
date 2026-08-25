@@ -82,8 +82,14 @@ def _en_law_to_cn(law_raw: str):
     s = re.sub(r"^the\s+", "", s)
     return EN_LAW_ALIASES.get(s)
 
-# Statuses that count as hallucination (used by leaderboard aggregation)
-HALLUCINATION_STATUSES = {"✗MA", "✗NF", "✗F", "✗T"}
+# Statuses that count as hallucination (used by leaderboard aggregation).
+# The deterministic verifier only emits ✗MA (made-up article) and ✗T
+# (temporal/version hallucination). Content-faithfulness (✗NF) and bare
+# factual errors (✗F) are NOT produced — the verifier checks citation
+# existence/validity + temporal validity, not substantive content. Keeping
+# this set truthful prevents the leaderboard from implying finer-grained
+# error classification than the engine actually delivers.
+HALLUCINATION_STATUSES = {"✗MA", "✗T"}
 
 # Law-name canonicalization: official full title -> short name
 LAW_NAME_ALIASES = {
