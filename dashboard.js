@@ -24,7 +24,7 @@
     if (st === "✗ERR") return "err";
     if (st === "✗T") return "temporal";
     if (["?","·"].includes(st)) return st === "·" ? "na" : "unk";
-    return "bad"; // ✗MA / ✗NF / ✗F
+    return "bad"; // ✗MA / ✗T
   }
 
   // ---- header / freshness ----
