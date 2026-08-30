@@ -79,10 +79,20 @@ jobs:
       - name: Restore previous leaderboard history from gh-pages
         # Generated artifacts are no longer committed to main; the trend
         # history lives on gh-pages. Pull it back so weeks accumulate.
+        # Hardening: if the live curl fails (e.g. raw.githubusercontent.com
+        # unreachable) but the last-good snapshot exists, fall back to it so a
+        # successful eval run never silently collapses the multi-week trend to 1.
         run: |
           mkdir -p data
-          curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/gh-pages/data/leaderboard_history.json" \
-            -o data/leaderboard_history.json || echo "no prior history on gh-pages"
+          if curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/gh-pages/data/leaderboard_history.json" \
+               -o data/leaderboard_history.json; then
+            echo "Restored leaderboard history from gh-pages (live)." 
+          elif [ "${FALLBACK_DATA:-false}" = "true" ] && [ -f .data_fallback/data/leaderboard_history.json ]; then
+            cp .data_fallback/data/leaderboard_history.json data/leaderboard_history.json
+            echo "curl failed — restored leaderboard history from .data_fallback snapshot."
+          else
+            echo "no prior history available (fresh start)." 
+          fi
         continue-on-error: true
 
       - name: Run evaluation
@@ -112,6 +122,7 @@ jobs:
             echo "Evaluation failed — restoring last-good data/ from gh-pages"
             rm -rf data
             cp -R .data_fallback/data data
+            echo "DATA_STALE=true" >> "$GITHUB_ENV"
           else
             echo "::error::Evaluation failed and no fallback data available on gh-pages"
             exit 1
@@ -142,7 +153,10 @@ jobs:
 
       - name: Generate dashboard
         if: ${{ github.event.inputs.scope != 'smoke' }}
-        run: python scripts/generate_dashboard.py --data data/ --output dashboard/
+        run: |
+          ARGS=""
+          if [ "${DATA_STALE:-false}" = "true" ]; then ARGS="--stale"; fi
+          python scripts/generate_dashboard.py --data data/ --output dashboard/ $ARGS
         # generate_dashboard.py already embeds the full data/ into dashboard/data/
         # AND writes .nojekyll, so publish_dir: ./dashboard (flattened to the
         # gh-pages root) makes every link resolve — no extra `cp` needed.

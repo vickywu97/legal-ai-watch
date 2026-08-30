@@ -118,7 +118,7 @@ def build_answers(latest_dir: Path | None):
     return out
 
 
-def generate(data_root: Path, out_dir: Path):
+def generate(data_root: Path, out_dir: Path, stale: bool = False):
     history = load_json(data_root / "leaderboard_history.json") or {
         "updated_at": date_cls.today().isoformat(), "models": [], "domains": [], "history": []}
     metadata = (load_json(data_root / "model_metadata.json")
@@ -135,6 +135,7 @@ def generate(data_root: Path, out_dir: Path):
 
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "stale": stale,
         "updated_at": history.get("updated_at", date_cls.today().isoformat()),
         "models": models,
         "domains": history.get("domains", []),
@@ -219,6 +220,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </p>
   </div>
 </header>
+
+<div id="eval-fail-banner" class="eval-fail-banner" role="alert" style="display:none">
+  ⚠ <b>本周度评测未成功运行</b>：当前展示的是 <b>最近一次成功评测的快照（数据截至 <span id="stale-date">—</span>）</b>。本次失败详情见仓库 <a href="https://github.com/vickywu97/legal-ai-watch/issues?q=label%3Aeval-failed" target="_blank" rel="noopener">Issues（标签 eval-failed）</a>。数值仍具参考性，但可能不是最新。
+</div>
 
 <main class="wrap">
   <section class="cards" id="kpi-cards"></section>
@@ -312,6 +317,9 @@ a:hover{text-decoration:underline}
 .tagline{margin:2px 0 0;color:#c7d2fe;font-size:13px}
 .updated{margin:10px 0 0;font-size:13px;color:#cbd5e1}
 .stale-warn{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:600}
+.eval-fail-banner{margin:0;padding:12px 18px;background:#fffbeb;border-bottom:2px solid #d97706;color:#92400e;font-size:13px;line-height:1.6}
+.eval-fail-banner b{color:#78350f}
+.eval-fail-banner a{color:#b45309}
 .legal-disclaimer{margin:0;padding:12px 18px;background:#fef2f2;border-bottom:2px solid #dc2626;color:#7f1d1d;font-size:13px;line-height:1.6}
 .legal-disclaimer b{color:#991b1b}
 .site-header .wrap{display:flex;flex-direction:column}
@@ -415,6 +423,12 @@ JS = """
   if (dataDate) {
     const days = Math.floor((Date.now() - new Date(dataDate).getTime()) / 86400000);
     if (days > 14) document.getElementById("stale-warn").style.display = "inline-block";
+  }
+  if (W.stale) {
+    const b = document.getElementById("eval-fail-banner");
+    if (b) b.style.display = "block";
+    const sd = document.getElementById("stale-date");
+    if (sd) sd.textContent = dataDate || "—";
   }
 
   // ---- KPI cards (latest week) ----
@@ -571,8 +585,11 @@ def main():
     ap = argparse.ArgumentParser(description="Generate Legal AI Watch dashboard")
     ap.add_argument("--data", default=str(DEFAULT_DATA), help="data root")
     ap.add_argument("--output", default=str(DEFAULT_OUT), help="dashboard output dir")
+    ap.add_argument("--stale", action="store_true",
+                    help="Mark the dashboard as serving last-good (stale) data because the "
+                         "latest evaluation failed; renders a visitor-facing banner.")
     args = ap.parse_args()
-    generate(Path(args.data), Path(args.output))
+    generate(Path(args.data), Path(args.output), stale=args.stale)
 
 
 if __name__ == "__main__":
