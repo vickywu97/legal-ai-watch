@@ -6,12 +6,13 @@ Legal AI Watch — 知识产权与内容来源说明 (NOTICE)
    - MIT 许可证仅覆盖本仓库内的公开代码与脚本，不构成对任何数据准确性、
      法律结论或评测结果的明示或暗示担保（软件按「原样 / AS IS」提供）。
 
-2. 上游依赖（开源、可选）
-   - 本仓库通过 .gitmodules 引用开源仓库 legal-hallucination-bench（MIT）作为
-     题库同步的来源（best-effort，缺失时自动跳过，不影响本仓库运行）。
-   - 该仓库为「开源」(public) 状态，其源代码、评测引擎与标注数据集
-     随其自身仓库一同公开发布。本仓库仅引用其公开可见的题库同步结果，
-     不对其内容准确性或完整性作任何担保。
+2. 上游依赖（私有、可选）
+   - legal-hallucination-bench 为**私有仓库（需授权访问 · license: MIT）**，仅作为
+     **可选的题库上游源**被 scripts/sync_questions.py 引用（best-effort，缺失时自动
+     跳过，不影响本仓库运行）。本仓库 CI 以 `submodules: false` 拉取，不再递归克隆
+     该私有跨仓 submodule（避免 GITHUB_TOKEN 偶发 abort）。
+   - 该仓库的源代码、评测引擎与标注数据集**不公开发布**，仅对获授权者可见。
+     本仓库仅引用其经授权同步的题库结果，不对其内容准确性或完整性作任何担保。
 
 3. 数据与引注基准（ground truth）来源与状态
    - 题库（config/questions.json）中各题的 expected_citation / acceptable_citations
