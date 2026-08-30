@@ -86,13 +86,9 @@ jobs:
       - name: Generate dashboard
         if: ${{ github.event.inputs.scope != 'smoke' }}
         run: python scripts/generate_dashboard.py --data data/ --output dashboard/
-
-      - name: Bundle data into dashboard for gh-pages
-        # The dashboard's audit-report links point at data/answers/... which is
-        # NOT published by `publish_dir: ./dashboard`. Copy data/ into dashboard/
-        # so those links resolve on the live GitHub Pages site (otherwise 404).
-        if: ${{ github.event.inputs.scope != 'smoke' }}
-        run: cp -r data dashboard/data
+        # generate_dashboard.py already embeds the full data/ into dashboard/data/
+        # AND writes .nojekyll, so publish_dir: ./dashboard (flattened to the
+        # gh-pages root) makes every link resolve — no extra `cp` needed.
 
       - name: Deploy to GitHub Pages
         if: ${{ github.event.inputs.scope != 'smoke' }}

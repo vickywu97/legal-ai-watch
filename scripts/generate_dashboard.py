@@ -152,6 +152,11 @@ def generate(data_root: Path, out_dir: Path):
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "dashboard.js").write_text(JS, encoding="utf-8")
     (out_dir / "style.css").write_text(CSS, encoding="utf-8")
+    # Critical: GitHub Pages would otherwise run Jekyll on this static site
+    # (which can mangle/drop the embedded data/ assets and break the build).
+    # peaceiris/actions-gh-pages force-orphans gh-pages from this output dir on
+    # every deploy, so .nojekyll MUST live inside the output to survive.
+    (out_dir / ".nojekyll").write_text("", encoding="utf-8")
 
     html = HTML_TEMPLATE.replace("/*__WATCH_DATA__*/", json.dumps(payload, ensure_ascii=False))
     (out_dir / "index.html").write_text(html, encoding="utf-8")
