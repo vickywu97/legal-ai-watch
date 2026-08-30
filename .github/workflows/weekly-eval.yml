@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,6 +25,7 @@ jobs:
           # submodule is absent. Recursive checkout of a private cross-repo
           # submodule intermittently fails under GITHUB_TOKEN and aborts the run.
           submodules: false
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
@@ -43,6 +45,22 @@ jobs:
       - name: Sync questions from bench (best-effort)
         run: python scripts/sync_questions.py --source submodule || echo "sync skipped"
 
+      - name: Snapshot last-good data/ from gh-pages (fallback)
+        # Full snapshot of the deployed data/ (history + per-week answers) so a
+        # failed evaluation can still deploy the previous good site instead of
+        # going stale or publishing broken audit links.
+        continue-on-error: true
+        run: |
+          rm -rf .data_fallback
+          git fetch origin gh-pages --quiet || true
+          if git cat-file -e origin/gh-pages:data/leaderboard_history.json 2>/dev/null; then
+            git archive origin/gh-pages data | tar -x -C .
+            mv data .data_fallback
+            echo "FALLBACK_DATA=true" >> "$GITHUB_ENV"
+          else
+            echo "FALLBACK_DATA=false" >> "$GITHUB_ENV"
+          fi
+
       - name: Restore previous leaderboard history from gh-pages
         # Generated artifacts are no longer committed to main; the trend
         # history lives on gh-pages. Pull it back so weeks accumulate.
@@ -53,12 +71,50 @@ jobs:
         continue-on-error: true
 
       - name: Run evaluation
+        id: eval
+        continue-on-error: true
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
           MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
         run: python scripts/run_eval.py --date $(date +%Y-%m-%d) --output data/ --samples 3
+
+      - name: Ensure deployable data/ (fallback if eval failed)
+        run: |
+          if [ "${{ steps.eval.outcome }}" = "success" ] && [ -d data ] && [ -n "$(ls -A data 2>/dev/null)" ]; then
+            echo "Using freshly evaluated data/"
+          elif [ "${FALLBACK_DATA:-false}" = "true" ]; then
+            echo "Evaluation failed — restoring last-good data/ from gh-pages"
+            rm -rf data
+            cp -R .data_fallback/data data
+          else
+            echo "::error::Evaluation failed and no fallback data available on gh-pages"
+            exit 1
+          fi
+
+      - name: Open issue if eval failed (last-good deployed)
+        if: ${{ steps.eval.outcome == 'failure' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Weekly eval failed — deployed last-good data (run #${context.runId})`;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              `The weekly evaluation step failed, but the workflow deployed the **last-good** data/ from gh-pages so the public leaderboard is not stale.`,
+              ``,
+              `- Run: ${runUrl}`,
+              `- Time (UTC): ${new Date().toISOString()}`,
+              ``,
+              `Action: check the run log, fix the eval, then re-run (workflow_dispatch).`
+            ].join('\n');
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'eval-failed'
+            });
+            const existing = issues.find(i => i.title === title);
+            if (!existing) {
+              await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title, body, labels: ['eval-failed'] });
+            }
 
       - name: Generate dashboard
         run: python scripts/generate_dashboard.py --data data/ --output dashboard/
@@ -97,14 +153,13 @@ jobs:
             const title = `CI Failure: Weekly Model Evaluation #${context.runId}`;
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const body = [
-              `The **Weekly Model Evaluation** workflow failed.`,
+              `The **Weekly Model Evaluation** workflow failed and could NOT deploy (no fallback data available).`,
               ``,
               `- Run: ${runUrl}`,
               `- Triggered by: ${context.actor}`,
               `- Time (UTC): ${new Date().toISOString()}`,
               ``,
-              `A failed run means the public leaderboard is stale. ` +
-              `Check the run log before re-running.`
+              `The public leaderboard is stale. Check the run log before re-running.`
             ].join('\n');
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
