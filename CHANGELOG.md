@@ -10,6 +10,12 @@ Each line follows: `YYYY-MM-DD · <scope> · <summary>`
 
 ---
 
+## 2026-08-30 · ci · gh-pages 结构重建 + footer 修正 + eval 失败兜底硬化
+- **gh-pages 部署结构污染修复（真实缺陷）**：旧工作流 `cp -r data dashboard/data` 与 `generate_dashboard.py`（早已把 data/ 嵌入 dashboard/data/）冲突，造成 `dashboard/data/data/` 嵌套并泄漏 scripts/、tests/；root index.html 的相对链接 `data/`、`data/answers/` 全 404。重建 gh-pages 为干净 flatten（index.html / style.css / dashboard.js / data/ / status.json / .nojekyll），移除冗余 `cp`，并在 `generate_dashboard.py` 落 `.nojekyll`。
+- **footer 意图修正**：看板页脚原误写「开源仓库 · MIT」，与 README（729fa0b）矛盾——LHB 实为**私有仓库 · 需授权访问**（license: MIT 仅指许可，非可见性）；`generate_dashboard.py` 改为 `legal-hallucination-bench（私有仓库 · 需授权访问 · Private — license: MIT）`。
+- **eval 失败仍部署（韧性硬化，提交 3cf3797）**：weekly-eval.yml / manual-eval.yml 改造——评估步骤 `continue-on-error`；评估前 `git archive origin/gh-pages data` 取 last-good 兜底；失败则还原兜底并开 `eval-failed` Issue；连兜底都无 → `exit 1` 走 `alert-on-failure` 开 `ci-failure` Issue。成功路径不变，已有 12 周历史不受影响。
+- 教训：跨分支操作前须 `git status` 确认工作树干净（曾因 dirty checkout 误把 flatten 提交到 main，已 `reset --hard origin/main` 恢复）。
+
 ## 2026-08-17 · questions · 新增 qid31 + 核验引擎修复 + 文档计数同步
 - **题库 30 → 31 题**：新增 qid 31（有限责任公司股权对外转让）——修正旧版「须经多少股东同意」题（题干沿用 2018 公司法第71条旧规则，与新法第84条已删除该前置程序不符）；新题问「其他股东享有什么权利」，预期引《公司法》第84条（书面通知 + 优先购买权），旧法第71条作 `acceptable_citations` 容错；`config/statute_equivalence.json` 新增 `company-equity-transfer` 等价组（第71条 → 第84条）。
 - **核验引擎修复（真实缺陷）**：`scripts/verifier.py` 的 `acceptable_citations` 分支原逻辑「只要题目配置了可接受旧条号（Q9 第43条 / Q10 第177条 / Q31 第71条），无论模型实际引注为何均判 ✓」，掩盖幻觉、压低 HVI；改为必须模型**实际引注**该可接受条文（或归一化到其 canonical）才判 ✓。新增 2 个回归测试锁定（共 18 个 verifier 测试通过）。

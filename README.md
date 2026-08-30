@@ -131,6 +131,18 @@ python scripts/run_eval.py --date 2026-08-08 --locale en --output data/ --sample
 
 ---
 
+## 🛡️ 评测失败时的兜底行为（CI 韧性）
+
+每周定时与手动评测都按「评估 → 生成看板 → 部署」执行。为防止一次失败把站点搞坏或让其停滞，做了三层兜底：
+
+- **评估软失败**：评测步骤 `continue-on-error`。若本轮 API 调用 / 核验失败，工作流从 `gh-pages` 取回**上一期可用 data/** 兜底部署，并开一个 `eval-failed` 标签的 Issue 提醒本周未刷新——公开排行榜不会变成空白或损坏的链接。
+- **评估硬失败**：若连 `gh-pages` 上都没有任何可用 data/（如首次运行即失败等极端情况），本 Job `exit 1`，由 `alert-on-failure` 开 `ci-failure` 标签的 Issue，**不部署**，避免发布损坏站点。
+- **smoke 不污染看板**：手动评测 `scope=smoke` 仅跑前 5 题做真·API 端到端预检，**不生成、不部署**，不会用半截数据覆盖公开排行榜。
+
+> ⚠️ **前置依赖：4 个模型 API Key 必须配置为仓库 Secrets**（Settings → Secrets and variables → Actions，变量名 `DEEPSEEK_API_KEY` / `ZHIPU_API_KEY` / `DASHSCOPE_API_KEY` / `MOONSHOT_API_KEY`）。若未配置，每周评测会**持续软失败**——站点只会反复部署上一期数据并每周开 `eval-failed` Issue，排行榜永远不刷新。请务必先配密钥，再 `smoke` 预检确认能拿到真实分数。
+
+---
+
 ## 📁 仓库结构
 
 ```
