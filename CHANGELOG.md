@@ -16,6 +16,11 @@ Each line follows: `YYYY-MM-DD · <scope> · <summary>`
 - **eval 失败仍部署（韧性硬化，提交 3cf3797）**：weekly-eval.yml / manual-eval.yml 改造——评估步骤 `continue-on-error`；评估前 `git archive origin/gh-pages data` 取 last-good 兜底；失败则还原兜底并开 `eval-failed` Issue；连兜底都无 → `exit 1` 走 `alert-on-failure` 开 `ci-failure` Issue。成功路径不变，已有 12 周历史不受影响。
 - 教训：跨分支操作前须 `git status` 确认工作树干净（曾因 dirty checkout 误把 flatten 提交到 main，已 `reset --hard origin/main` 恢复）。
 
+## 2026-08-31 · docs · 可见性反转（LHB 与本仓库均改为公开）
+- 用户决定 `legal-hallucination-bench` 与 `legal-ai-watch` 两个仓库**均设为公开（Public）**。
+- 反转历史条目（2026-08-30「footer 意图修正」将 LHB 标为私有）：现 LHB 已公开，页脚与 README 的「私有仓库 · 需授权访问 · Private」改为「开源仓库 · MIT」。bench 仓库自身的推广/访谈文档始终以「开源基准」叙事，与此一致。
+- 注：仓库可见性开关仅在 GitHub 网页 Settings 操作，本提交仅修正代码与文档中的可见性措辞；公开后评测脚本、data/、METHODOLOGY 均对外可读。
+
 ## 2026-08-17 · questions · 新增 qid31 + 核验引擎修复 + 文档计数同步
 - **题库 30 → 31 题**：新增 qid 31（有限责任公司股权对外转让）——修正旧版「须经多少股东同意」题（题干沿用 2018 公司法第71条旧规则，与新法第84条已删除该前置程序不符）；新题问「其他股东享有什么权利」，预期引《公司法》第84条（书面通知 + 优先购买权），旧法第71条作 `acceptable_citations` 容错；`config/statute_equivalence.json` 新增 `company-equity-transfer` 等价组（第71条 → 第84条）。
 - **核验引擎修复（真实缺陷）**：`scripts/verifier.py` 的 `acceptable_citations` 分支原逻辑「只要题目配置了可接受旧条号（Q9 第43条 / Q10 第177条 / Q31 第71条），无论模型实际引注为何均判 ✓」，掩盖幻觉、压低 HVI；改为必须模型**实际引注**该可接受条文（或归一化到其 canonical）才判 ✓。新增 2 个回归测试锁定（共 18 个 verifier 测试通过）。
