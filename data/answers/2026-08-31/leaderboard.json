@@ -2,35 +2,35 @@
   "date": "2026-08-31",
   "leaderboard": [
     {
-      "model": "Qwen-Max",
-      "hvi": 0.0215,
-      "crfi": 0.9785,
-      "coverage": 1.0,
-      "integrity": 0.9785,
+      "model": "DeepSeek-R1",
+      "hvi": 0.037,
+      "crfi": 0.963,
+      "coverage": 0.871,
+      "integrity": 0.8387,
       "temporal": 0.0,
-      "citations": 31,
+      "citations": 28,
       "api_errors": 0,
       "answered": 31,
       "rank": 1
     },
     {
-      "model": "DeepSeek-R1",
-      "hvi": 0.025,
-      "crfi": 0.975,
-      "coverage": 0.8602,
-      "integrity": 0.8387,
+      "model": "Qwen-Max",
+      "hvi": 0.0449,
+      "crfi": 0.9551,
+      "coverage": 0.957,
+      "integrity": 0.914,
       "temporal": 0.0,
-      "citations": 27,
+      "citations": 31,
       "api_errors": 0,
       "answered": 31,
       "rank": 2
     },
     {
       "model": "GLM-4",
-      "hvi": 0.0968,
-      "crfi": 0.9032,
+      "hvi": 0.1075,
+      "crfi": 0.8925,
       "coverage": 1.0,
-      "integrity": 0.9032,
+      "integrity": 0.8925,
       "temporal": 0.0,
       "citations": 31,
       "api_errors": 0,
@@ -42,19 +42,19 @@
     "DeepSeek-R1": {
       "民法": 0.0,
       "刑法": 0.0,
-      "税法": 0.1429,
+      "税法": 0.2222,
       "专利": 0.0,
       "公司法": 0.0,
-      "数据合规": 0.125,
+      "数据合规": 0.1429,
       "竞争法": 0.0
     },
     "Qwen-Max": {
       "民法": 0.0,
-      "刑法": 0.0556,
+      "刑法": 0.0,
       "税法": 0.0,
       "专利": 0.0,
       "公司法": 0.0,
-      "数据合规": 0.1111,
+      "数据合规": 0.5,
       "竞争法": 0.0
     },
     "GLM-4": {
@@ -63,7 +63,7 @@
       "税法": 0.0,
       "专利": 0.25,
       "公司法": 0.0,
-      "数据合规": 0.3333,
+      "数据合规": 0.4444,
       "竞争法": 0.0
     }
   }
