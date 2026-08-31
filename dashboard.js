@@ -35,6 +35,12 @@
     const days = Math.floor((Date.now() - new Date(dataDate).getTime()) / 86400000);
     if (days > 14) document.getElementById("stale-warn").style.display = "inline-block";
   }
+  if (W.stale) {
+    const b = document.getElementById("eval-fail-banner");
+    if (b) b.style.display = "block";
+    const sd = document.getElementById("stale-date");
+    if (sd) sd.textContent = dataDate || "—";
+  }
 
   // ---- KPI cards (latest week) ----
   const latest = HISTORY.length ? HISTORY[HISTORY.length - 1] : null;

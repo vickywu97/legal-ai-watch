@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-08-30T11:44:30.768833+00:00",
-  "data_date": "2026-08-08",
+  "generated_at": "2026-08-31T05:06:56.130007+00:00",
+  "data_date": "2026-08-31",
   "models": 3,
-  "questions": 30,
-  "history_weeks": 12,
+  "questions": 31,
+  "history_weeks": 13,
   "disclaimer": "本看板数值度量模型引注与策展基准条文的一致性，不构成法律意见；引注基准由 AI 策展 + 内部复核（不署名、非执业背书、不担责）整理，仍可能存在错误或遗漏，非专业鉴证。对外引用 HVI / CRFI 等数值或结论时，请注明「AI 策展，未经执业背书」，风险自担。",
   "ground_truth_status": "ai_curated_internal_review"
 }
