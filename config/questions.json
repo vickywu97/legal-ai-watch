@@ -58,16 +58,7 @@
       "prompt": "增值税一般纳税人的进项税额哪些不得从销项税额中抵扣？请引用具体法条。",
       "prompt_en": "Which input VAT of general VAT taxpayers may NOT be credited against output tax? Cite the specific provision.",
       "expected_citation": "《增值税法》第22条",
-      "also_correct": [
-        {
-          "citation": "《增值税暂行条例》第10条",
-          "justification": "增值税法（2024通过／2026-01-01施行）第二十二条承继暂行条例第10条的「不得抵扣进项税额」规则；暂行条例已随增值税法施行而废止，但内容实质等价，模型引旧条仍属正确（historical equivalent，非幻觉）。"
-        },
-        {
-          "citation": "《营业税改征增值税试点实施办法》第二十七条",
-          "justification": "营改增试点实施办法第27条与增值税法第22条内容实质等价：以负面清单逐项列举「不得抵扣」具体情形，规制对象完全相同。注意第25条系「准予抵扣」正向列举，方向相反，不能互为等价。"
-        }
-      ],
+      "also_correct": [],
       "verifiable": true
     },
     {
@@ -413,13 +404,9 @@
       "prompt": "当事人一方不履行合同义务或者履行合同义务不符合约定，应当承担继续履行、采取补救措施或者赔偿损失等违约责任。请引用现行有效法条。",
       "prompt_en": "A party breaching a contract bears liability for specific performance, cure, or damages. Cite the currently effective provision.",
       "expected_citation": "《民法典》第577条",
-      "also_correct": [
-        {
-          "citation": "《民法典》第584条",
-          "justification": "违约责任一般规定(577)与损害赔偿范围特别规定(584)规制对象重叠，引此条亦属正确。"
-        }
-      ],
-      "verifiable": true
+      "also_correct": [],
+      "verifiable": true,
+      "temporal_trap": true
     },
     {
       "qid": 35,
@@ -428,7 +415,8 @@
       "prompt_en": "What is the general limitation period for civil rights protection claims? Cite the currently effective provision.",
       "expected_citation": "《民法典》第188条",
       "also_correct": [],
-      "verifiable": true
+      "verifiable": true,
+      "temporal_trap": true
     },
     {
       "qid": 36,
@@ -445,7 +433,12 @@
       "prompt": "公司股东滥用公司法人独立地位和股东有限责任，逃避债务，严重损害公司债权人利益的，应当对公司债务承担连带责任。这一规定见于哪部法律的具体法条？",
       "prompt_en": "Shareholders abusing legal-person independence and limited liability to evade debts and seriously harming creditors shall be jointly liable. Which law/article?",
       "expected_citation": "《公司法》第23条",
-      "also_correct": [],
+      "also_correct": [
+        {
+          "citation": "《公司法》第20条第3款",
+          "justification": "旧公司法（2018修正）第20条第3款为法人人格否认（揭开公司面纱）条款，与2023公司法第23条规制对象完全相同；模型引旧条号但实质正确，属条号版本差异而非幻觉，按同样正确放过（与 Q9/Q10/Q31 新旧法容错策略一致）。"
+        }
+      ],
       "verifiable": true
     },
     {

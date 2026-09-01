@@ -1,6 +1,6 @@
 # 题库逐题复核核对表（内部 · 非执业背书）
 
-> **性质**：本文件是 `config/questions.json` 39 题的**复核清单**（其中 qid 32–39 于 2026-09-01 新增，经 verifier 双路径验证，待正式逐题复核），供内部逐项核对 ground truth 使用。
+> **性质**：本文件是 `config/questions.json` 39 题的**复核清单**（其中 qid 32–39 于 2026-09-01 新增，经 verifier 双路径验证，已于 2026-09-01 经用户具名 sign-off 复核完成），供内部逐项核对 ground truth 使用。
 >
 > **重要免责**：下表全部 `expected_citation` / `acceptable_citations` / `also_correct` 均为 **AI 策展生成，并经内部复核**，**不署名、不构成执业背书或专业责任归属**，亦非法律意见。对外引用本仓库 HVI/CRFI 等数值或结论时，请自行判断风险并注明「AI 策展，未经执业背书」。
 >
