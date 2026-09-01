@@ -26,7 +26,7 @@
 3. **本仓库内容不构成法律意见**，不得用于任何实际法律决策；如有具体法律问题，请咨询执业律师。
 4. **默认随附数据为合成演示（seed_demo），非真实评测**；真实评测结果由使用者自行运行、自行承担使用与引用责任。
 5. 软件按 MIT 许可证「按原样（AS IS）」提供，**作者对数据 / 结论的准确性不作任何明示或暗示担保，亦不对因使用本仓库产生的任何后果负责。**
-6. **复核记录（非执业背书）**：31 题逐题复核清单见 [`docs/VERIFICATION_CHECKLIST.md`](docs/VERIFICATION_CHECKLIST.md)；内部复核记录（不署名、非执业背书）见 [`docs/GROUND_TRUTH_SIGN-OFF.md`](docs/GROUND_TRUTH_SIGN-OFF.md)。本仓库数值为 AI 策展 + 内部复核结果，**非专业鉴证**；对外引用请注明「AI 策展，未经执业背书」，风险由引用方自行承担。
+6. **复核记录（非执业背书）**：39 题逐题复核清单见 [`docs/VERIFICATION_CHECKLIST.md`](docs/VERIFICATION_CHECKLIST.md)；内部复核记录（不署名、非执业背书）见 [`docs/GROUND_TRUTH_SIGN-OFF.md`](docs/GROUND_TRUTH_SIGN-OFF.md)。本仓库数值为 AI 策展 + 内部复核结果，**非专业鉴证**；对外引用请注明「AI 策展，未经执业背书」，风险由引用方自行承担。
 
 ---
 
@@ -124,7 +124,7 @@ python scripts/run_eval.py --date 2026-08-08 --locale en --output data/ --sample
 1. **本地回归门禁（免费）**：`python -m pytest tests/ -q`。CI 在付费调用前也会自动跑这一关，逻辑 bug 在本地就能抓出。
 2. **密钥预检（每密钥仅 1 次极简调用）**：`python scripts/test_provider_key.py`。直接告诉你哪个密钥 401/429/缺失，**不等到跑完 279 次调用才发现**。
    - 在 Mac 上跑需先 `export` 对应密钥；或在 GitHub Actions 用下一步的 smoke 代替。
-3. **smoke 烟雾测试（约 5/31 成本，不污染看板）**：在 `Actions → Manual Model Evaluation → Run workflow` 里把 **`scope` 选 `smoke`**（只跑前 5 题，真·API 端到端验证密钥+管线，但**不部署、不更新公开排行榜**）。确认各模型都拿到真实分数（而非 ✗ERR）后再走第 4 步。
+3. **smoke 烟雾测试（约 5/39 成本，不污染看板）**：在 `Actions → Manual Model Evaluation → Run workflow` 里把 **`scope` 选 `smoke`**（只跑前 5 题，真·API 端到端验证密钥+管线，但**不部署、不更新公开排行榜**）。确认各模型都拿到真实分数（而非 ✗ERR）后再走第 4 步。
 4. **全量评测（full，唯一花全量钱的步骤）**：`scope` 选 `full`（默认），或本地 `python scripts/run_eval.py --date <日期> --output data/ --samples 3`。
 
 > 经验：换密钥/加模型后，**先 smoke 再 full**，最多两次付费运行即可确认无误；不要直接盲跑 full。
@@ -139,7 +139,7 @@ python scripts/run_eval.py --date 2026-08-08 --locale en --output data/ --sample
 - **评估硬失败**：若连 `gh-pages` 上都没有任何可用 data/（如首次运行即失败等极端情况），本 Job `exit 1`，由 `alert-on-failure` 开 `ci-failure` 标签的 Issue，**不部署**，避免发布损坏站点。
 - **smoke 不污染看板**：手动评测 `scope=smoke` 仅跑前 5 题做真·API 端到端预检，**不生成、不部署**，不会用半截数据覆盖公开排行榜。
 
-> ⚠️ **前置依赖：4 个模型 API Key 必须配置为仓库 Secrets**（Settings → Secrets and variables → Actions，变量名 `DEEPSEEK_API_KEY` / `ZHIPU_API_KEY` / `DASHSCOPE_API_KEY` / `MOONSHOT_API_KEY`）。若未配置，每周评测会**持续软失败**——站点只会反复部署上一期数据并每周开 `eval-failed` Issue，排行榜永远不刷新。请务必先配密钥，再 `smoke` 预检确认能拿到真实分数。
+> ⚠️ **前置依赖：当前启用模型所需的 API Key 必须配置为仓库 Secrets**（Settings → Secrets and variables → Actions，变量名 `DEEPSEEK_API_KEY` / `ZHIPU_API_KEY` / `DASHSCOPE_API_KEY` / `MOONSHOT_API_KEY`）。若未配置，每周评测会**持续软失败**——站点只会反复部署上一期数据并每周开 `eval-failed` Issue，排行榜永远不刷新。请务必先配密钥，再 `smoke` 预检确认能拿到真实分数。如需启用 `config/models.json` 中预置的其他国产模型（文心 ERNIE / 腾讯混元 / 字节豆包 / 阶跃 / MiniMax / 百川），按其 `api_key_env` 增配对应 Secret 并将 `enabled` 改为 `true` 即可，无需改代码。
 
 ---
 
@@ -161,6 +161,10 @@ legal-ai-watch/
 
 在 GitHub Issues 中使用 **"Add Model Request"** 模板提交，维护者审核后加入
 `config/models.json` 并手动触发一次评测。详见 [docs/HOW_TO_ADD_MODEL.md](docs/HOW_TO_ADD_MODEL.md)。
+
+**已预置、可一键启用的国产模型（无需改代码）**：除了当前在榜的 DeepSeek-R1 / Qwen-Max / GLM-4，以及因限流暂停的 Kimi-K2，`config/models.json` 已内置 6 个国产模型卡槽——**文心一言 ERNIE-4.5（百度千帆）、腾讯混元 Hunyuan-Turbo、豆包 Doubao-Pro（字节火山方舟）、阶跃 Step-2、MiniMax ABAB、百川 Baichuan4**——全部 `enabled:false`。只需在仓库 Secrets 填入对应 `api_key_env`（见各条目 `disabled_reason`），把 `enabled` 改为 `true`，再手动 Run workflow 一次，即自动并入评测池与排行榜。评测域因此可从「3 个在榜模型」横向扩展到「10 个国产模型卡槽」。
+
+题库当前 **39 题**（2026-09-01 由 31 扩充至 39），新增 8 题重点补齐此前覆盖不足的陷阱类型：**跨法张冠李戴**（如公司/专利问题被错引至民法典）、**旧法时序陷阱**（诱导模型援引已废止的《合同法》《民法通则》→ 预期 `✗T`）、**硬幻觉（不存在条号）**、**超范围法律**（援引 8 部法之外的法律作答）。新增题均经 `scripts/verifier.py` 本地双路径验证（正确回答→`✓`、陷阱回答→`✗MA`/`✗T`）。
 
 ---
 

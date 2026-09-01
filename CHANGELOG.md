@@ -10,6 +10,13 @@ Each line follows: `YYYY-MM-DD · <scope> · <summary>`
 
 ---
 
+## 2026-09-01 · eval-domain · 评测域拓宽（模型轴 × 题型轴双轴）
+
+- **模型轴：评测池 4 → 10 卡槽**。`config/models.json` 在原有 DeepSeek-R1 / Qwen-Max / GLM-4（在榜）+ Kimi-K2（限流暂停）基础上，预置 6 个国产模型卡槽并默认 `enabled:false`：**文心一言 ERNIE-4.5（百度千帆）、腾讯混元 Hunyuan-Turbo、豆包 Doubao-Pro（字节火山方舟）、阶跃 Step-2、MiniMax ABAB、百川 Baichuan4**。调用层为纯 OpenAI 兼容泛型（只 POST `api_base` + Bearer），故新增模型零代码改动，填对应 `api_key_env` Secret 并置 `enabled:true` 即自动并入评测池与排行榜。
+- **题型轴：题库 31 → 39 题**。新增 qid 32–39，重点补齐此前覆盖不足的陷阱类型：**跨法张冠李戴 ×3**（公司/专利问题被错引至民法典 → `✗MA`）、**旧法时序陷阱 ×2**（《合同法》第107条 / 《民法通则》第135条诱导 → `✗T`，二者均在 `statute_equivalence.json` 的 `repealed_laws` 中）、**硬幻觉·不存在条号 ×1**（《公司法》第999条 → `✗MA`）、**超范围法律 ×2**（援引 8 部法之外的法律作答 → `✗MA`）。
+- **安全校验**：全部 8 道新题的 `expected_citation` 均经 `legal-hallucination-bench` / compliance-triangle 同款 2327 节点 KB 核实真实存在；并用 `scripts/verifier.py` 本地双路径干跑——正确回答→`✓`、陷阱回答→`✗MA`/`✗T`，17 项断言全绿，未污染既有 31 题。
+- **文档同步**：README 模型/题型计数（31→39、5/31→5/39）、「请求评测新模型」段补预置模型说明；`run_eval.py` 重新编译通过，无测试写死旧数量。
+
 ## 2026-08-30 · ci · gh-pages 结构重建 + footer 修正 + eval 失败兜底硬化
 - **gh-pages 部署结构污染修复（真实缺陷）**：旧工作流 `cp -r data dashboard/data` 与 `generate_dashboard.py`（早已把 data/ 嵌入 dashboard/data/）冲突，造成 `dashboard/data/data/` 嵌套并泄漏 scripts/、tests/；root index.html 的相对链接 `data/`、`data/answers/` 全 404。重建 gh-pages 为干净 flatten（index.html / style.css / dashboard.js / data/ / status.json / .nojekyll），移除冗余 `cp`，并在 `generate_dashboard.py` 落 `.nojekyll`。
 - **footer 意图修正**：看板页脚原误写「开源仓库 · MIT」，与 README（729fa0b）矛盾——LHB 实为**私有仓库 · 需授权访问**（license: MIT 仅指许可，非可见性）；`generate_dashboard.py` 改为 `legal-hallucination-bench（私有仓库 · 需授权访问 · Private — license: MIT）`。

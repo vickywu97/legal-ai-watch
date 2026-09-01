@@ -9,7 +9,10 @@
       "prompt_en": "If the buyer breaches, may the seller claim damages for the benefit obtainable after performance? Cite the specific provision.",
       "expected_citation": "《民法典》第584条",
       "also_correct": [
-        {"citation": "《民法典》第577条", "justification": "违约责任一般规定（含损害赔偿请求基础），与第584条（可得利益赔偿特别规定）规制对象重叠，模型引此条亦属正确。"}
+        {
+          "citation": "《民法典》第577条",
+          "justification": "违约责任一般规定（含损害赔偿请求基础），与第584条（可得利益赔偿特别规定）规制对象重叠，模型引此条亦属正确。"
+        }
       ],
       "verifiable": true
     },
@@ -20,7 +23,10 @@
       "prompt_en": "If the provider of a standard clause fails to give prominent notice or explanation, what is the clause's validity? Cite the specific provision.",
       "expected_citation": "《民法典》第496条",
       "also_correct": [
-        {"citation": "《民法典》第497条", "justification": "格式条款无效情形（免除己方责任、加重对方责任、排除对方主要权利等），与第496条（未提示说明则不算订入）规制对象相邻，模型引此条亦属正确。"}
+        {
+          "citation": "《民法典》第497条",
+          "justification": "格式条款无效情形（免除己方责任、加重对方责任、排除对方主要权利等），与第496条（未提示说明则不算订入）规制对象相邻，模型引此条亦属正确。"
+        }
       ],
       "verifiable": true
     },
@@ -31,7 +37,10 @@
       "prompt_en": "What is the prescription period for prosecuting theft? Cite the specific provision and its basis.",
       "expected_citation": "《刑法》第87条",
       "also_correct": [
-        {"citation": "《刑法》第264条", "justification": "盗窃罪法定刑（第264条）规定法定最高刑可达无期徒刑；结合第87条追诉时效（法定最高刑为无期徒刑、死刑的，经过二十年），模型引用第264条说明时效『计算依据』亦属正确，不应判为幻觉（✗MA）。"}
+        {
+          "citation": "《刑法》第264条",
+          "justification": "盗窃罪法定刑（第264条）规定法定最高刑可达无期徒刑；结合第87条追诉时效（法定最高刑为无期徒刑、死刑的，经过二十年），模型引用第264条说明时效『计算依据』亦属正确，不应判为幻觉（✗MA）。"
+        }
       ],
       "verifiable": true
     },
@@ -50,8 +59,14 @@
       "prompt_en": "Which input VAT of general VAT taxpayers may NOT be credited against output tax? Cite the specific provision.",
       "expected_citation": "《增值税法》第22条",
       "also_correct": [
-        {"citation": "《增值税暂行条例》第10条", "justification": "增值税法（2024通过／2026-01-01施行）第二十二条承继暂行条例第10条的「不得抵扣进项税额」规则；暂行条例已随增值税法施行而废止，但内容实质等价，模型引旧条仍属正确（historical equivalent，非幻觉）。"},
-        {"citation": "《营业税改征增值税试点实施办法》第二十七条", "justification": "营改增试点实施办法第27条与增值税法第22条内容实质等价：以负面清单逐项列举「不得抵扣」具体情形，规制对象完全相同。注意第25条系「准予抵扣」正向列举，方向相反，不能互为等价。"}
+        {
+          "citation": "《增值税暂行条例》第10条",
+          "justification": "增值税法（2024通过／2026-01-01施行）第二十二条承继暂行条例第10条的「不得抵扣进项税额」规则；暂行条例已随增值税法施行而废止，但内容实质等价，模型引旧条仍属正确（historical equivalent，非幻觉）。"
+        },
+        {
+          "citation": "《营业税改征增值税试点实施办法》第二十七条",
+          "justification": "营改增试点实施办法第27条与增值税法第22条内容实质等价：以负面清单逐项列举「不得抵扣」具体情形，规制对象完全相同。注意第25条系「准予抵扣」正向列举，方向相反，不能互为等价。"
+        }
       ],
       "verifiable": true
     },
@@ -62,25 +77,82 @@
       "prompt_en": "Which items are included in the special additional deductions for comprehensive income of resident individuals? Cite the specific provision.",
       "expected_citation": "《个人所得税法》第6条",
       "also_correct": [
-        {"citation": "《个人所得税专项附加扣除暂行办法》第5条", "justification": "子女教育专项附加扣除（第二章 子女教育 第5–7条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第6条", "justification": "子女教育专项附加扣除（第二章 子女教育 第5–7条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第7条", "justification": "子女教育专项附加扣除（第二章 子女教育 第5–7条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第8条", "justification": "继续教育专项附加扣除（第三章 继续教育 第8–10条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第9条", "justification": "继续教育专项附加扣除（第三章 继续教育 第8–10条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第10条", "justification": "继续教育专项附加扣除（第三章 继续教育 第8–10条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第11条", "justification": "大病医疗专项附加扣除（第四章 大病医疗 第11–13条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第12条", "justification": "大病医疗专项附加扣除（第四章 大病医疗 第11–13条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第13条", "justification": "大病医疗专项附加扣除（第四章 大病医疗 第11–13条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第14条", "justification": "住房贷款利息专项附加扣除（第五章 住房贷款利息 第14–16条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第15条", "justification": "住房贷款利息专项附加扣除（第五章 住房贷款利息 第14–16条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第16条", "justification": "住房贷款利息专项附加扣除（第五章 住房贷款利息 第14–16条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第17条", "justification": "住房租金专项附加扣除（第六章 住房租金 第17–19条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第18条", "justification": "住房租金专项附加扣除（第六章 住房租金 第17–19条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第19条", "justification": "住房租金专项附加扣除（第六章 住房租金 第17–19条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第20条", "justification": "赡养老人专项附加扣除（第七章 赡养老人 第20–22条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第21条", "justification": "赡养老人专项附加扣除（第七章 赡养老人 第20–22条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "《个人所得税专项附加扣除暂行办法》第22条", "justification": "赡养老人专项附加扣除（第七章 赡养老人 第20–22条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"},
-        {"citation": "国发〔2022〕8号", "justification": "「3岁以下婴幼儿照护」为2022年新增的第7项专项附加扣除，依据国务院《关于设立3岁以下婴幼儿照护个人所得税专项附加扣除的通知》（国发〔2022〕8号）；《暂行办法》本身未增写该法条，模型引此通知亦属正确。"}
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第5条",
+          "justification": "子女教育专项附加扣除（第二章 子女教育 第5–7条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第6条",
+          "justification": "子女教育专项附加扣除（第二章 子女教育 第5–7条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第7条",
+          "justification": "子女教育专项附加扣除（第二章 子女教育 第5–7条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第8条",
+          "justification": "继续教育专项附加扣除（第三章 继续教育 第8–10条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第9条",
+          "justification": "继续教育专项附加扣除（第三章 继续教育 第8–10条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第10条",
+          "justification": "继续教育专项附加扣除（第三章 继续教育 第8–10条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第11条",
+          "justification": "大病医疗专项附加扣除（第四章 大病医疗 第11–13条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第12条",
+          "justification": "大病医疗专项附加扣除（第四章 大病医疗 第11–13条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第13条",
+          "justification": "大病医疗专项附加扣除（第四章 大病医疗 第11–13条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第14条",
+          "justification": "住房贷款利息专项附加扣除（第五章 住房贷款利息 第14–16条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第15条",
+          "justification": "住房贷款利息专项附加扣除（第五章 住房贷款利息 第14–16条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第16条",
+          "justification": "住房贷款利息专项附加扣除（第五章 住房贷款利息 第14–16条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第17条",
+          "justification": "住房租金专项附加扣除（第六章 住房租金 第17–19条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第18条",
+          "justification": "住房租金专项附加扣除（第六章 住房租金 第17–19条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第19条",
+          "justification": "住房租金专项附加扣除（第六章 住房租金 第17–19条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第20条",
+          "justification": "赡养老人专项附加扣除（第七章 赡养老人 第20–22条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第21条",
+          "justification": "赡养老人专项附加扣除（第七章 赡养老人 第20–22条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "《个人所得税专项附加扣除暂行办法》第22条",
+          "justification": "赡养老人专项附加扣除（第七章 赡养老人 第20–22条），属第6条「专项附加扣除」的具体枚举，模型引此条亦属正确。"
+        },
+        {
+          "citation": "国发〔2022〕8号",
+          "justification": "「3岁以下婴幼儿照护」为2022年新增的第7项专项附加扣除，依据国务院《关于设立3岁以下婴幼儿照护个人所得税专项附加扣除的通知》（国发〔2022〕8号）；《暂行办法》本身未增写该法条，模型引此通知亦属正确。"
+        }
       ],
       "verifiable": true
     },
@@ -152,7 +224,10 @@
       "prompt_en": "When does a real right in immovable property take effect? Cite the specific provision.",
       "expected_citation": "《民法典》第214条",
       "also_correct": [
-        {"citation": "《民法典》第209条", "justification": "不动产物权登记设立（与第214条「非经登记不生效」规制对象重叠），模型引此条亦属正确。"}
+        {
+          "citation": "《民法典》第209条",
+          "justification": "不动产物权登记设立（与第214条「非经登记不生效」规制对象重叠），模型引此条亦属正确。"
+        }
       ],
       "verifiable": true
     },
@@ -163,7 +238,10 @@
       "prompt_en": "Under what circumstance may a donor revoke a gift? Cite the specific provision.",
       "expected_citation": "《民法典》第658条",
       "also_correct": [
-        {"citation": "《民法典》第663条", "justification": "赠与的法定撤销（受赠人严重侵害赠与人等情形），与第658条（交付前任意撤销）同属「赠与可撤销」之正确引注，模型引此条亦属正确。"}
+        {
+          "citation": "《民法典》第663条",
+          "justification": "赠与的法定撤销（受赠人严重侵害赠与人等情形），与第658条（交付前任意撤销）同属「赠与可撤销」之正确引注，模型引此条亦属正确。"
+        }
       ],
       "verifiable": true
     },
@@ -309,6 +387,83 @@
           "justification": "2018 公司法（修订前）第七十一条与 2023 公司法第八十四条规制对象相同：均涉及有限责任公司股权对外转让。但注意旧法第七十一条要求『经其他股东过半数同意』，新法第八十四条已删除该前置同意程序，改为『书面通知 + 其他股东优先购买权』（不再要求人数同意）。模型引旧条号但实质指向股权转让权利，属条号版本差异而非幻觉，按等价引注放过；若仍主张『须经其他股东过半数同意』则属旧法误用（本 watch 无 as_of 门禁，由 acceptable_citations 容许）。"
         }
       ],
+      "verifiable": true
+    },
+    {
+      "qid": 32,
+      "domain": "公司法",
+      "prompt": "有限责任公司股东有权查阅、复制公司章程、股东名册、股东会会议记录、董事会会议决议、监事会会议决议和财务会计报告。该股东知情权的法条依据是什么？请引用具体法条。",
+      "prompt_en": "What is the statutory basis for a LLC shareholder's right to inspect and copy the articles, shareholder roster, and meeting minutes? Cite the provision.",
+      "expected_citation": "《公司法》第57条",
+      "also_correct": [],
+      "verifiable": true
+    },
+    {
+      "qid": 33,
+      "domain": "刑法",
+      "prompt": "为了使国家、公共利益、本人或者他人的人身、财产和其他权利免受正在进行的不法侵害，而采取的制止不法侵害的行为，对不法侵害人造成损害的，是否负刑事责任？请引用具体法条。",
+      "prompt_en": "Is criminal liability borne for defensive acts against ongoing unlawful infringement? Cite the provision.",
+      "expected_citation": "《刑法》第20条",
+      "also_correct": [],
+      "verifiable": true
+    },
+    {
+      "qid": 34,
+      "domain": "民法",
+      "prompt": "当事人一方不履行合同义务或者履行合同义务不符合约定，应当承担继续履行、采取补救措施或者赔偿损失等违约责任。请引用现行有效法条。",
+      "prompt_en": "A party breaching a contract bears liability for specific performance, cure, or damages. Cite the currently effective provision.",
+      "expected_citation": "《民法典》第577条",
+      "also_correct": [
+        {
+          "citation": "《民法典》第584条",
+          "justification": "违约责任一般规定(577)与损害赔偿范围特别规定(584)规制对象重叠，引此条亦属正确。"
+        }
+      ],
+      "verifiable": true
+    },
+    {
+      "qid": 35,
+      "domain": "民法",
+      "prompt": "向人民法院请求保护民事权利的诉讼时效期间为多少年？请引用现行有效法条。",
+      "prompt_en": "What is the general limitation period for civil rights protection claims? Cite the currently effective provision.",
+      "expected_citation": "《民法典》第188条",
+      "also_correct": [],
+      "verifiable": true
+    },
+    {
+      "qid": 36,
+      "domain": "公司法",
+      "prompt": "股份有限公司在哪些情形下可以收购本公司股份？请引用具体法条。",
+      "prompt_en": "Under what circumstances may a joint-stock company acquire its own shares? Cite the provision.",
+      "expected_citation": "《公司法》第162条",
+      "also_correct": [],
+      "verifiable": true
+    },
+    {
+      "qid": 37,
+      "domain": "公司法",
+      "prompt": "公司股东滥用公司法人独立地位和股东有限责任，逃避债务，严重损害公司债权人利益的，应当对公司债务承担连带责任。这一规定见于哪部法律的具体法条？",
+      "prompt_en": "Shareholders abusing legal-person independence and limited liability to evade debts and seriously harming creditors shall be jointly liable. Which law/article?",
+      "expected_citation": "《公司法》第23条",
+      "also_correct": [],
+      "verifiable": true
+    },
+    {
+      "qid": 38,
+      "domain": "专利",
+      "prompt": "侵犯专利权的赔偿数额，按照权利人因被侵权所受到的实际损失或者侵权人因侵权所获得的利益确定；难以确定的，参照该专利许可使用费的倍数合理确定。该赔偿数额确定规则的法条依据是什么？请引用具体法条。",
+      "prompt_en": "Basis for determining patent-infringement damages (actual loss / infringing gain / multiple of license fee)? Cite the provision.",
+      "expected_citation": "《专利法》第71条",
+      "also_correct": [],
+      "verifiable": true
+    },
+    {
+      "qid": 39,
+      "domain": "税法",
+      "prompt": "纳税人购进货物、劳务、服务、无形资产、不动产，取得的增值税专用发票上注明的税额，哪些情形不得从销项税额中抵扣？请引用具体法条。",
+      "prompt_en": "Which input VAT amounts may NOT be credited against output tax? Cite the provision.",
+      "expected_citation": "《增值税法》第22条",
+      "also_correct": [],
       "verifiable": true
     }
   ]
