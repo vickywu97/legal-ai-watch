@@ -265,7 +265,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <h2>逐题诊断矩阵 <span class="sub" id="matrix-date"></span></h2>
     <p class="legend">
       <span class="lg ok">✓ 正确</span>
-      <span class="lg bad">✗MA 编造/错引法条</span>
+      <span class="lg bad">✗MA 错引真实法条</span>
+      <span class="lg bad">✗NF 引注法条不存在(NOT_FOUND)</span>
       <span class="lg bad">✗T 时序幻觉(引已废止旧法)</span>
       <span class="lg err">✗ERR 接口失败</span>
       <span class="lg unk">? 无法判定</span>
@@ -412,8 +413,9 @@ JS = """
     if (st === "✓") return "ok";
     if (st === "✗ERR") return "err";
     if (st === "✗T") return "temporal";
+    if (st === "✗NF") return "bad"; // 引注法条不存在
     if (["?","·"].includes(st)) return st === "·" ? "na" : "unk";
-    return "bad"; // ✗MA / ✗T
+    return "bad"; // ✗MA
   }
 
   // ---- header / freshness ----

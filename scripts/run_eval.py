@@ -179,7 +179,7 @@ def verify_answer(question: dict, answer: str, eq: Equivalence) -> dict:
 # Tie-break priority for the *displayed* per-question verdict. Conservative for a
 # hallucination-watch board: a hallucination verdict outranks a correct one, and
 # an explicit API error (✗ERR) is surfaced when no hallucination is present.
-_STATUS_PRIORITY = ["✗MA", "✗T", "✗ERR", "✓", "·", "?"]
+_STATUS_PRIORITY = ["✗MA", "✗NF", "✗T", "✗ERR", "✓", "·", "?"]
 
 
 def aggregate_samples(model_id: str, question: dict, samples_results, n_samples: int) -> dict:

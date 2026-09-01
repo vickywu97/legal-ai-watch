@@ -14,8 +14,9 @@ verifier.py — Legal AI Watch 确定性核验引擎 (本地 · 零依赖 · 可
 
 2. 幻觉类型区分 (status)
    ✓    命中预期 (或等价) 引注
-   ✗MA  引注与预期不符 (编造 / 错引法条)
+   ✗MA  引注与预期不符 (错引了真实存在但错误的法条)
    ✗T   引注已废止法律且非等价 (时序幻觉: 用已失效旧法作答)
+   ✗NF  引注法条不存在 (NOT_FOUND: 条号超出该法已知有效条文范围, 即编造了不存在的法条)
    ·    未识别到法条引注 (nocite)
    ?    题目不可验证 / 无预期引注
 
@@ -83,13 +84,17 @@ def _en_law_to_cn(law_raw: str):
     return EN_LAW_ALIASES.get(s)
 
 # Statuses that count as hallucination (used by leaderboard aggregation).
-# The deterministic verifier only emits ✗MA (made-up article) and ✗T
-# (temporal/version hallucination). Content-faithfulness (✗NF) and bare
-# factual errors (✗F) are NOT produced — the verifier checks citation
-# existence/validity + temporal validity, not substantive content. Keeping
-# this set truthful prevents the leaderboard from implying finer-grained
-# error classification than the engine actually delivers.
-HALLUCINATION_STATUSES = {"✗MA", "✗T"}
+# The deterministic verifier emits ✗MA (wrong-but-existing article),
+# ✗T (temporal/version hallucination), and ✗NF (NOT_FOUND: the cited article
+# number falls outside the law's known valid range, i.e. the provision does not
+# exist). Bare factual / content-faithfulness errors (✗F) are NOT produced —
+# the verifier checks citation existence/validity + temporal validity, not
+# substantive content. Keeping this set truthful prevents the leaderboard from
+# implying finer-grained error classification than the engine actually delivers.
+# NOTE: adding ✗NF to this set does NOT change HVI — it only relabels answers
+# that were previously ✗MA (a non-existent article is still a hallucination),
+# so total wrong-count is preserved.
+HALLUCINATION_STATUSES = {"✗MA", "✗T", "✗NF"}
 
 # Law-name canonicalization: official full title -> short name
 LAW_NAME_ALIASES = {
@@ -230,6 +235,12 @@ class Equivalence:
     def __init__(self, data: dict):
         self.raw = data
         self.repealed_laws = set(data.get("repealed_laws", []))
+        # law short-name -> (min_article, max_article). Used for ✗NF (NOT_FOUND)
+        # detection: a cited article outside [min, max] does not exist.
+        self.article_ranges = {
+            law: tuple(r) for law, r in data.get("article_ranges", {}).items()
+            if isinstance(r, (list, tuple)) and len(r) == 2
+        }
         self._map = {}  # (law, article) -> canonical (law, article)
         for g in data.get("provision_groups", []):
             cur = parse_ref(g["current"])
@@ -268,7 +279,7 @@ def verify(question: dict, answer: str, eq: Equivalence) -> dict:
     """Verify a single model `answer` against `question` using equivalence `eq`.
 
     Returns a dict with at minimum: {status, detail, citations}.
-    Status is one of ✓ / ✗MA / ✗T / · / ?.
+    Status is one of ✓ / ✗MA / ✗T / ✗NF / · / ?.
     """
     citations = extract_citations(answer)
     verifiable = question.get("verifiable", True)
@@ -353,6 +364,24 @@ def verify(question: dict, answer: str, eq: Equivalence) -> dict:
         return {"status": "✗T",
                 "detail": f"引注已废止法律（时序幻觉）: {temporal_hit}（预期 {expected}）",
                 "citations": citations}
+
+    # NOT_FOUND (✗NF): a cited CURRENT-law article whose number is outside that
+    # law's known valid range -> the provision does not exist (made-up article).
+    # This separates "编造不存在的法条" (✗NF) from "引了真实但错误的法条" (✗MA).
+    # Repealed-law citations are caught above as ✗T and never reach here. Laws
+    # absent from article_ranges are left as ✗MA (conservative: without a corpus
+    # we cannot assert non-existence, so we avoid false ✗NF).
+    for c in citations:
+        ref = parse_ref(c)
+        if ref is None:
+            continue
+        law, art = ref
+        rng = eq.article_ranges.get(law)
+        if rng is not None and not (rng[0] <= art <= rng[1]):
+            return {"status": "✗NF",
+                    "detail": (f"引注法条不存在 (NOT_FOUND): {c}"
+                               f"（{law} 有效条文范围为第{rng[0]}–{rng[1]}条）"),
+                    "citations": citations}
 
     return {"status": "✗MA",
             "detail": f"引注与预期不符 (期望 {expected}, 实际 {citations[0]})",

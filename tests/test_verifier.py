@@ -196,11 +196,59 @@ def test_repealed_predecessors_declared_in_repealed_laws():
                 missing.append((law, p))
     assert not missing, f"repealed_predecessors not declared in repealed_laws: {missing}"
 
-def test_hallucination_statuses_exactly_ma_and_t():
-    # Regression guard: the deterministic verifier only emits ✗MA and ✗T as
-    # hallucinations. ✗NF / ✗F are intentionally NOT produced (content-faithfulness
-    # / bare factual errors would need an LLM judge, out of scope). This locks the
+
+def test_verify_nonexistent_article_is_not_found():
+    """Q36 expected 公司法第162条. Citing a non-existent article number
+    (公司法第999条, well beyond the 266-article cap) must be ✗NF (NOT_FOUND),
+    NOT ✗MA — the provision does not exist, distinct from a wrong-but-real one."""
+    e = load_eq()
+    r = verify(q(36, "《公司法》第162条"),
+               "依据《公司法》第999条，决议由董事会作出。", e)
+    assert r["status"] == "✗NF"
+    assert "不存在" in r["detail"]
+
+
+def test_verify_wrong_but_existing_article_still_ma():
+    """Regression: ✗NF must NOT over-fire on a real article that is merely
+    wrong for the question. 公司法第57条 exists (within [1,266]) -> ✗MA."""
+    e = load_eq()
+    r = verify(q(36, "《公司法》第162条"),
+               "依据《公司法》第57条，股东会有权修改章程。", e)
+    assert r["status"] == "✗MA"
+
+
+def test_verify_nf_only_for_known_law():
+    """A law absent from article_ranges (e.g. 行政处罚法) citing a high number
+    must fall back to ✗MA, never a false ✗NF (we lack a corpus to assert
+    non-existence for that law)."""
+    e = load_eq()
+    r = verify(q(1, "《民法典》第584条"),
+               "依据《行政处罚法》第999条，应予处罚。", e)
+    assert r["status"] == "✗MA"
+
+
+def test_verify_nf_does_not_override_temporal():
+    """Precedence: a repealed-law citation with an out-of-range article
+    (合同法第999条) is still ✗T (temporal), not ✗NF — temporal wins."""
+    e = load_eq()
+    r = verify(q(1, "《民法典》第584条"),
+               "依据《合同法》第999条，该合同无效。", e)
+    assert r["status"] == "✗T"
+
+
+def test_verify_nf_across_laws():
+    """A non-existent article in another law (刑法第999条, cap 452) -> ✗NF."""
+    e = load_eq()
+    r = verify(q(33, "《刑法》第20条"),
+               "依据《刑法》第999条，正当防卫不负刑事责任。", e)
+    assert r["status"] == "✗NF"
+
+
+def test_hallucination_statuses_exactly_ma_t_and_nf():
+    # Regression guard: the deterministic verifier emits ✗MA, ✗T and ✗NF as
+    # hallucinations. ✗F (content-faithfulness / bare factual error) is still
+    # NOT produced (would need an LLM judge, out of scope). This locks the
     # taxonomy so dead status labels cannot be re-introduced silently.
-    assert HALLUCINATION_STATUSES == {"✗MA", "✗T"}
-    assert "✗NF" not in HALLUCINATION_STATUSES
+    assert HALLUCINATION_STATUSES == {"✗MA", "✗T", "✗NF"}
+    assert "✗NF" in HALLUCINATION_STATUSES
     assert "✗F" not in HALLUCINATION_STATUSES
