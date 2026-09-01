@@ -96,6 +96,12 @@ def _en_law_to_cn(law_raw: str):
 # so total wrong-count is preserved.
 HALLUCINATION_STATUSES = {"✗MA", "✗T", "✗NF"}
 
+# Content-faithfulness (✗F) is an OPTIONAL, default-OFF enhancement layer
+# (scripts/faithfulness.py). It is intentionally NOT in HALLUCINATION_STATUSES,
+# so enabling it never changes HVI — it only downgrades a ✓ to ✗F when the cited
+# article's content is judged unfaithful. See docs/XF_CONTENT_FAITHFULNESS_DESIGN.md.
+FAITHFULNESS_FAIL = "✗F"
+
 # Law-name canonicalization: official full title -> short name
 LAW_NAME_ALIASES = {
     "中华人民共和国民法典": "民法典",
@@ -275,11 +281,15 @@ class Equivalence:
 # ----------------------------------------------------------------------------
 # Verification
 # ----------------------------------------------------------------------------
-def verify(question: dict, answer: str, eq: Equivalence) -> dict:
+def verify(question: dict, answer: str, eq: Equivalence, faithfulness=None) -> dict:
     """Verify a single model `answer` against `question` using equivalence `eq`.
 
     Returns a dict with at minimum: {status, detail, citations}.
-    Status is one of ✓ / ✗MA / ✗T / ✗NF / · / ?.
+    Status is one of ✓ / ✗MA / ✗T / ✗NF / ✗F / · / ?.
+
+    `faithfulness` (optional, scripts/faithfulness.FaithfulnessChecker): when
+    provided, a ✓ verdict whose cited article content is judged unfaithful is
+    downgraded to ✗F. Disabled by default; never affects HVI.
     """
     citations = extract_citations(answer)
     verifiable = question.get("verifiable", True)
@@ -299,6 +309,32 @@ def verify(question: dict, answer: str, eq: Equivalence) -> dict:
     exp_law, exp_art = exp_ref
     exp_canon = eq.canonical(exp_law, exp_art)
 
+    def _emit_ok(detail: str, cite: str) -> dict:
+        # Optional content-faithfulness downgrade (✗F). Only fires on the ✓ path
+        # and only when an official article text is available for the cited
+        # provision; otherwise the verdict stays ✓ (no false ✗F on uncovered laws).
+        if faithfulness is not None and cite:
+            ref = parse_ref(cite)
+            if ref is not None:
+                law, art = eq.canonical(*ref)
+                ok = faithfulness.is_faithful(answer, law, art)
+                if ok is False:
+                    sc = None
+                    try:
+                        sc = faithfulness.score(answer, law, art)
+                    except Exception:
+                        pass
+                    return {"status": FAITHFULNESS_FAIL,
+                            "detail": f"引注条号正确但内容表述不忠实 (Faithfulness fail): {cite}",
+                            "citations": citations,
+                            "faithfulness_checked": True,
+                            "faithfulness_score": sc}
+                # ok is True: faithful pass → ✓, but record that we checked.
+                if ok is True:
+                    return {"status": "✓", "detail": detail, "citations": citations,
+                            "faithfulness_checked": True}
+        return {"status": "✓", "detail": detail, "citations": citations}
+
     matched_canonical = None
     matched_alt = None
     temporal_hit = None  # cited a repealed-law provision that is NOT equivalent
@@ -316,7 +352,7 @@ def verify(question: dict, answer: str, eq: Equivalence) -> dict:
             temporal_hit = c
 
     if matched_canonical is not None:
-        return {"status": "✓", "detail": f"命中预期引注 {expected}", "citations": citations}
+        return _emit_ok(f"命中预期引注 {expected}", matched_canonical)
 
     # Per-question override (kept for backward compatibility / one-off cases):
     # accepts provisions that map to the SAME canonical provision as expected
@@ -337,9 +373,8 @@ def verify(question: dict, answer: str, eq: Equivalence) -> dict:
             cref = parse_ref(c)
             if cref is not None and eq.canonical(*cref) == alt_canon:
                 just = alt.get("justification", "") if isinstance(alt, dict) else ""
-                return {"status": "✓",
-                        "detail": f"命中可接受等价引注 {alt_cite}（等价性论证：{just}）",
-                        "citations": citations}
+                return _emit_ok(
+                    f"命中可接受等价引注 {alt_cite}（等价性论证：{just}）", c)
 
     # Distinct-but-also-correct provisions: a model may cite a DIFFERENT article
     # that is nonetheless legally correct (e.g. 违约责任一般规定 vs 损害赔偿
@@ -356,9 +391,8 @@ def verify(question: dict, answer: str, eq: Equivalence) -> dict:
             cref = parse_ref(c)
             if cref is not None and eq.canonical(*cref) == alt_canon:
                 just = alt.get("justification", "") if isinstance(alt, dict) else ""
-                return {"status": "✓",
-                        "detail": f"命中同样正确的引注 {alt_cite}（同样正确：{just}）",
-                        "citations": citations}
+                return _emit_ok(
+                    f"命中同样正确的引注 {alt_cite}（同样正确：{just}）", c)
 
     if temporal_hit is not None:
         return {"status": "✗T",

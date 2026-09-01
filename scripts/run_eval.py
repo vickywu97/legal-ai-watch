@@ -48,12 +48,14 @@ from verifier import (
     extract_citations,
     verify as verify_fn,
 )
+from faithfulness import FaithfulnessChecker
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 CONFIG_DIR = ROOT / "config"
 PROMPTS_PATH = CONFIG_DIR / "prompts.json"
 EQUIV_PATH = CONFIG_DIR / "statute_equivalence.json"
+ARTICLE_TEXTS_PATH = CONFIG_DIR / "article_texts.json"
 
 
 class ModelCallError(RuntimeError):
@@ -167,10 +169,11 @@ def call_model(model_cfg: dict, prompt: str, api_key: str, system_prompt: str,
 # ----------------------------------------------------------------------------
 # Verification dispatch
 # ----------------------------------------------------------------------------
-def verify_answer(question: dict, answer: str, eq: Equivalence) -> dict:
+def verify_answer(question: dict, answer: str, eq: Equivalence, faithfulness=None) -> dict:
     """Verify a single answer. The local deterministic verifier IS the official
-    methodology (docs/METHODOLOGY.md §7)."""
-    return verify_fn(question, answer, eq)
+    methodology (docs/METHODOLOGY.md §7). `faithfulness` (optional) enables the
+    ✗F content-faithfulness layer; None keeps the deterministic baseline."""
+    return verify_fn(question, answer, eq, faithfulness=faithfulness)
 
 
 # ----------------------------------------------------------------------------
@@ -179,7 +182,7 @@ def verify_answer(question: dict, answer: str, eq: Equivalence) -> dict:
 # Tie-break priority for the *displayed* per-question verdict. Conservative for a
 # hallucination-watch board: a hallucination verdict outranks a correct one, and
 # an explicit API error (✗ERR) is surfaced when no hallucination is present.
-_STATUS_PRIORITY = ["✗MA", "✗NF", "✗T", "✗ERR", "✓", "·", "?"]
+_STATUS_PRIORITY = ["✗MA", "✗NF", "✗T", "✗ERR", "✗F", "✓", "·", "?"]
 
 
 def aggregate_samples(model_id: str, question: dict, samples_results, n_samples: int) -> dict:
@@ -208,6 +211,10 @@ def aggregate_samples(model_id: str, question: dict, samples_results, n_samples:
     temporal = counts.get("✗T", 0)
     api_err = counts.get("✗ERR", 0)
     unverif = counts.get("?", 0)
+    # Content-faithfulness (✗F) sub-metric tallies — only populated when the
+    # optional faithfulness layer is enabled; harmless otherwise.
+    faithful_checked = sum(1 for _, v in samples_results if v.get("faithfulness_checked") is True)
+    faithful_fail = counts.get("✗F", 0)
 
     rep_answer = next((a for a, v in samples_results if v["status"] == majority), samples_results[0][0])
     rep_v = next((v for a, v in samples_results if v["status"] == majority), samples_results[0][1])
@@ -238,6 +245,8 @@ def aggregate_samples(model_id: str, question: dict, samples_results, n_samples:
         "_temporal": temporal,
         "_api_err": api_err,
         "_unverif": unverif,
+        "_faithfulness_checked": faithful_checked,
+        "_faithfulness_fail": faithful_fail,
         "_counts": counts,
     }
 
@@ -263,10 +272,17 @@ def load_json(path: Path):
 
 
 def run_evaluation(eval_date: str, output_root: Path, demo: bool = False,
-                   samples: int = 3, locale: str = "zh", limit: int = 0):
+                   samples: int = 3, locale: str = "zh", limit: int = 0,
+                   check_faithfulness: bool = False):
     models = load_json(CONFIG_DIR / "models.json")["models"]
     questions = load_json(CONFIG_DIR / "questions.json")["questions"]
     eq = Equivalence.load(EQUIV_PATH)
+    faithfulness = None
+    if check_faithfulness:
+        faithfulness = FaithfulnessChecker.load(ARTICLE_TEXTS_PATH)
+        print(f"[info] content-faithfulness (✗F) ENABLED: "
+              f"{len(faithfulness.texts)} article texts loaded; "
+              f"uncovered articles are skipped (no false ✗F).", flush=True)
     system_prompt = _load_prompts(locale)
 
     # smoke 模式: 只评测前 `limit` 题, 结果写到 data/smoke/, 且**不更新公开排行榜
@@ -349,7 +365,7 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False,
                 answer = ""
                 try:
                     answer = call_model(model, prompt, api_key, system_prompt)
-                    v = verify_answer(q, answer, eq)
+                    v = verify_answer(q, answer, eq, faithfulness=faithfulness)
                 except ModelCallError as e:
                     print(f"  [error] {model['id']} q{q['qid']} sample{s_idx+1}: {e}", flush=True)
                     msg = str(e)
@@ -439,6 +455,11 @@ def build_leaderboard(model_results: dict) -> list[dict]:
         api_err = sum(v.get("_api_err", 0) for v in verifs)
         total_cited = correct + wrong
         total_engaged = correct + wrong + nocite
+        # Optional ✗F content-fidelity sub-metric (None when layer disabled).
+        faithful_checked = sum(v.get("_faithfulness_checked", 0) for v in verifs)
+        faithful_fail = sum(v.get("_faithfulness_fail", 0) for v in verifs)
+        content_fidelity = round((faithful_checked - faithful_fail) / faithful_checked, 4) \
+            if faithful_checked else None
 
         cited_questions = sum(1 for v in verifs
                               if v["status"] in {"✓", "✗MA", "✗T"})
@@ -464,6 +485,7 @@ def build_leaderboard(model_results: dict) -> list[dict]:
             "temporal": temporal_score,
             "citations": cited_questions,
             "api_errors": api_err,
+            "content_fidelity": content_fidelity,
             "answered": len(verifs),
             "rank": rank,
         })
@@ -503,12 +525,16 @@ def main():
     ap.add_argument("--limit", type=int, default=0,
                     help="smoke test: evaluate only the first N questions "
                          "(writes to data/smoke, skips public leaderboard history)")
+    ap.add_argument("--check-faithfulness", action="store_true",
+                    help="enable optional ✗F content-faithfulness layer (stdlib, "
+                         "default OFF; never changes HVI)")
     args = ap.parse_args()
 
     output_root = Path(args.output)
     output_root.mkdir(parents=True, exist_ok=True)
     run_evaluation(args.date, output_root, demo=args.demo, samples=args.samples,
-                   locale=args.locale, limit=args.limit)
+                   locale=args.locale, limit=args.limit,
+                   check_faithfulness=args.check_faithfulness)
 
 
 if __name__ == "__main__":

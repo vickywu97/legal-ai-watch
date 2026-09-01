@@ -267,6 +267,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <span class="lg ok">✓ 正确</span>
       <span class="lg bad">✗MA 错引真实法条</span>
       <span class="lg bad">✗NF 引注法条不存在(NOT_FOUND)</span>
+      <span class="lg warn">✗F 内容不忠实(引对条文但表述失真)</span>
       <span class="lg bad">✗T 时序幻觉(引已废止旧法)</span>
       <span class="lg err">✗ERR 接口失败</span>
       <span class="lg unk">? 无法判定</span>
@@ -351,7 +352,7 @@ tbody tr:hover{background:#f8fafc}
 
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;margin:0 0 12px;color:var(--muted)}
 .lg{padding:2px 8px;border-radius:6px;background:#f1f5f9}
-.lg.ok{color:var(--ok)} .lg.bad{color:var(--bad)} .lg.unk{color:var(--unk)} .lg.na{color:#94a3b8} .lg.err{color:var(--err)}
+.lg.ok{color:var(--ok)} .lg.bad{color:var(--bad)} .lg.unk{color:var(--unk)} .lg.na{color:#94a3b8} .lg.err{color:var(--err)} .lg.warn{color:#b45309}
 
 #matrix{display:inline-block;min-width:100%}
 table.matrix{border-collapse:collapse;font-size:13px}
@@ -362,6 +363,7 @@ table.matrix thead th{background:#f8fafc;position:sticky;top:0}
 .cell.ok{background:#dcfce7;color:var(--ok)}
 .cell.bad{background:#fee2e2;color:var(--bad)}
 .cell.temporal{background:#fae8ff;color:#a21caf}
+.cell.warn{background:#fef3c7;color:#b45309}
 .cell.err{background:#ede9fe;color:var(--err)}
 .cell.unk{background:#f3f4f6;color:var(--unk)}
 .cell.na{background:#f1f5f9;color:#94a3b8}
@@ -414,6 +416,7 @@ JS = """
     if (st === "✗ERR") return "err";
     if (st === "✗T") return "temporal";
     if (st === "✗NF") return "bad"; // 引注法条不存在
+    if (st === "✗F") return "warn"; // 内容不忠实
     if (["?","·"].includes(st)) return st === "·" ? "na" : "unk";
     return "bad"; // ✗MA
   }
