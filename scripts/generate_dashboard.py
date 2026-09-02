@@ -237,7 +237,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <th>排名</th><th>模型</th><th class="num">HVI</th>
             <th class="num">CRFI</th><th class="num">覆盖率</th>
             <th class="num">综合正确</th><th class="num">时序幻觉</th>
-            <th class="num">API错误</th><th>厂商 / 版本</th>
+            <th class="num">API错误</th><th class="num">内容忠实</th><th>厂商 / 版本</th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -473,6 +473,7 @@ JS = """
         <td class="num">${num(r.integrity!=null?pct(r.integrity):null)}</td>
         <td class="num">${num(r.temporal!=null?pct(r.temporal):null)}</td>
         <td class="num">${r.api_errors||0}</td>
+        <td class="num">${num(r.content_fidelity!=null?pct(r.content_fidelity):null)}</td>
         <td>${mv}</td>
       </tr>`;
     }).join("");
