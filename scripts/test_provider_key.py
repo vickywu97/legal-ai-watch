@@ -38,7 +38,7 @@ def load_models():
     return json.loads((CONFIG_DIR / "models.json").read_text(encoding="utf-8"))["models"]
 
 
-def test_one(model: dict, api_key: str) -> tuple[str, str]:
+def check_one(model: dict, api_key: str) -> tuple[str, str]:
     """返回 (status, message)。status in {OK, MISSING, HTTP_xxx, ERR}。"""
     if not api_key:
         return "MISSING", f"环境变量 {model['api_key_env']} 未设置"
@@ -79,7 +79,7 @@ def main():
     for m in models:
         env = m["api_key_env"]
         key = os.environ.get(env, "")
-        status, msg = test_one(m, key)
+        status, msg = check_one(m, key)
         if status == "OK":
             tag = "✅"
         elif status == "MISSING":
