@@ -27,6 +27,13 @@ build_article_texts.py — 从 LHB 已核验全文本 KB 生成 legal-ai-watch �
 
   # 显式指定 KB（当 LHB 不在默认探测路径时）
   python scripts/build_article_texts.py --kb /path/to/statutes.jsonl
+
+范围外规范（LHB 8 部法 KB 未覆盖）的「人工核验官方原文」工作流：
+  # 1) 生成/更新留空模板（幂等，保留已填正文）
+  python scripts/build_article_texts.py --emit-pending config/article_texts_unverified.json
+  # 2) 律师逐条从官方原文核对填入 article_texts[*]，并把 _pending[*].status 置 VERIFIED
+  # 3) 合并进主库（仅接受 VERIFIED 且正文非空者；主库 _uncovered 同步移除）
+  python scripts/build_article_texts.py --merge-pending config/article_texts_unverified.json
 """
 import argparse
 import json
@@ -65,6 +72,29 @@ LAW_CODE_TO_CN = {
 
 ART_RE = re.compile(r"^第(\d+)条$")                       # 第162条   -> 162
 ART_SUB_RE = re.compile(r"^第(\d+)条之[一二三四五六七八九十]+$")  # 第162条之二 -> 162
+
+# 范围外规范（不在 LHB 8 部法 KB 内）的官方出处指引。
+# 注意：此处只给「权威发布机构 + 检索路径」，【绝不】提供任何条文正文——
+# 正文须由人工（律师）从官方原文逐条核对填入，否则正是本基准要检测的幻觉。
+# 令号/施行日期为公开已知信息，仍建议填入时于官方库二次核对。
+OFFICIAL_SOURCE = {
+    "个人信息保护法": (
+        "全国人大常委会公布（主席令第六十一号，2021-08-20 通过，2021-11-01 施行）。"
+        "权威文本：国家法律法规数据库 https://flk.npc.gov.cn 或 中国政府网 https://www.gov.cn"
+    ),
+    "数据安全法": (
+        "全国人大常委会公布（主席令第八十四号，2021-06-10 通过，2021-09-01 施行）。"
+        "权威文本：国家法律法规数据库 https://flk.npc.gov.cn 或 中国政府网 https://www.gov.cn"
+    ),
+    "反不正当竞争法": (
+        "全国人大常委会公布（2019-04-23 修正；现行主席令为 2019 年修正版）。"
+        "权威文本：国家法律法规数据库 https://flk.npc.gov.cn 或 中国政府网 https://www.gov.cn"
+    ),
+    "个人所得税专项附加扣除暂行办法": (
+        "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），"
+        "中国政府网 https://www.gov.cn 全文公布。"
+    ),
+}
 
 
 def norm_text(s: str) -> str:
@@ -180,6 +210,110 @@ def build(kb: dict, pairs: dict, old_texts: dict) -> Tuple[dict, list, list]:
     return merged, covered, uncovered, diffs, len(pairs)
 
 
+def emit_pending(pending_path: Path, questions: Path, kb_path: Path) -> None:
+    """生成/更新「人工核验官方原文」模板（幂等：保留已填正文）。
+
+    模板正文全部留空，绝不代写法条——由律师从官方原文逐条核对填入。
+    每条附：被哪些题引用(cited_by)、官方出处指引(official_source)、核验状态(status)。
+    """
+    kb = load_kb(kb_path)
+    pairs, _unparsed, nq = needed_pairs(questions)
+    _merged, _cov, uncovered, _diffs, npairs = build(kb, pairs, {})
+
+    existing = json.loads(pending_path.read_text(encoding="utf-8")) if pending_path.exists() else {}
+    old_pending = {p["key"]: p for p in existing.get("_pending", [])}
+    old_texts = existing.get("article_texts", {})
+
+    article_texts: dict = {}
+    pending: list = []
+    for u in uncovered:
+        key = u["key"]
+        law, art = key.split("#")
+        prev_text = old_texts.get(key, "")
+        article_texts[key] = prev_text
+        meta = old_pending.get(key, {})
+        pending.append({
+            "key": key,
+            "law": law,
+            "article": int(art),
+            "cited_by": u["cited_by"],
+            "official_source": OFFICIAL_SOURCE.get(law, "请核对官方公布文本（全国人大 / 国务院 / 中国政府网）"),
+            "status": meta.get("status", "PENDING_HUMAN_VERIFICATION"),
+            "filled_text_len": len(prev_text or ""),
+        })
+
+    result = {
+        "_NOTE": (
+            "【人工核验模板，非运行数据】内容忠实度(✗F) 对 KB 未覆盖的范围外规范，"
+            "需由人工从官方原文逐条核对填入正文，再经 --merge-pending 合并进主库 "
+            "config/article_texts.json。本文件正文【必须】由律师核验填入，"
+            "脚本绝不代写任何法条文字（那正是本基准要检测的幻觉）。\n"
+            "填法：1) 在 article_texts 的对应键填入该条官方【全文】；"
+            "2) 把 _pending 中该条的 status 改为 VERIFIED；"
+            "3) 运行 python scripts/build_article_texts.py --merge-pending <本文件>。"
+        ),
+        "_source": {
+            "generated_by": "scripts/build_article_texts.py --emit-pending",
+            "derived_from": "config/questions.json 的全部引注 - LHB 已核验 KB",
+            "official_source_guidance": "见各条 official_source 字段（权威发布机构 + 检索路径）",
+        },
+        "article_texts": article_texts,
+        "_pending": pending,
+    }
+    pending_path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"[emit-pending] 写出模板 {pending_path}：{len(pending)} 条缺口待人工核验")
+    print(f"                （{sum(1 for p in pending if p['filled_text_len']>0)} 条已填，"
+          f"{sum(1 for p in pending if p['status']=='VERIFIED')} 条已标记 VERIFIED）")
+
+
+def merge_pending(pending_path: Path, target_path: Path) -> None:
+    """把模板中 status=VERIFIED 且正文非空的条目合并进主库 article_texts.json。
+
+    安全闸：仅合并显式标记 VERIFIED 的条目；未核验（或仅填了字但未置 VERIFIED）
+    的条目跳过并打印警告，避免把未核实文字当作官方标准答案。
+    合并后主库 _uncovered 同步移除，模板中该条置为 MERGED 并清空正文。
+    """
+    p = json.loads(pending_path.read_text(encoding="utf-8"))
+    pt = p.get("article_texts", {})
+    pmeta = {m["key"]: m for m in p.get("_pending", [])}
+
+    target = json.loads(target_path.read_text(encoding="utf-8"))
+    at = target.setdefault("article_texts", {})
+
+    merged_keys: list = []
+    skipped: list = []
+    for key, text in pt.items():
+        meta = pmeta.get(key, {})
+        status = meta.get("status")
+        if not text or not text.strip():
+            continue
+        if status != "VERIFIED":
+            skipped.append((key, status or "未标记 VERIFIED"))
+            continue
+        at[key] = text.strip()
+        merged_keys.append(key)
+
+    # 主库 _uncovered 同步移除已合并条目
+    new_unc = [u for u in target.get("_uncovered", []) if u["key"] not in set(merged_keys)]
+    target["_uncovered"] = new_unc
+    target_path.write_text(json.dumps(target, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    # 模板：合并项置 MERGED 并清空正文，未核验项保留以便后续继续填
+    for m in p.get("_pending", []):
+        if m["key"] in set(merged_keys):
+            m["status"] = "MERGED"
+    p["article_texts"] = {k: ("" if k in set(merged_keys) else v) for k, v in pt.items()}
+    pending_path.write_text(json.dumps(p, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    print(f"[merge-pending] 已合并 {len(merged_keys)} 条 VERIFIED 条目 -> {target_path}")
+    for k in merged_keys:
+        print(f"                + {k}")
+    if skipped:
+        print(f"[merge-pending] 跳过 {len(skipped)} 条（已填但未标记 VERIFIED，需人工核验后重试）：")
+        for k, s in skipped:
+            print(f"                - {k} ({s})")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -190,7 +324,20 @@ def main():
                     help=f"输出 article_texts.json（默认 {TARGET_DEFAULT}）")
     ap.add_argument("--dry-run", action="store_true",
                     help="只打印覆盖/缺口报告，不写入文件")
+    ap.add_argument("--emit-pending", type=Path, metavar="PATH",
+                    help="生成/更新「人工核验官方原文」模板（正文留空，幂等保留已填内容）")
+    ap.add_argument("--merge-pending", type=Path, metavar="PATH",
+                    help="将模板中 status=VERIFIED 且正文非空的条目合并进主库 article_texts.json")
     args = ap.parse_args()
+
+    # ── 模板工作流先于常规生成 ─────────────────────────────────────────────
+    if args.emit_pending:
+        kb_path = resolve_kb_path(args.kb)
+        emit_pending(args.emit_pending, args.questions, kb_path)
+        return
+    if args.merge_pending:
+        merge_pending(args.merge_pending, args.out)
+        return
 
     kb_path = resolve_kb_path(args.kb)
     kb = load_kb(kb_path)

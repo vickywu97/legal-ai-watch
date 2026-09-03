@@ -1,0 +1,276 @@
+{
+  "_NOTE": "【人工核验模板，非运行数据】内容忠实度(✗F) 对 KB 未覆盖的范围外规范，需由人工从官方原文逐条核对填入正文，再经 --merge-pending 合并进主库 config/article_texts.json。本文件正文【必须】由律师核验填入，脚本绝不代写任何法条文字（那正是本基准要检测的幻觉）。\n填法：1) 在 article_texts 的对应键填入该条官方【全文】；2) 把 _pending 中该条的 status 改为 VERIFIED；3) 运行 python scripts/build_article_texts.py --merge-pending <本文件>。",
+  "_source": {
+    "generated_by": "scripts/build_article_texts.py --emit-pending",
+    "derived_from": "config/questions.json 的全部引注 - LHB 已核验 KB",
+    "official_source_guidance": "见各条 official_source 字段（权威发布机构 + 检索路径）"
+  },
+  "article_texts": {
+    "个人信息保护法#38": "",
+    "个人信息保护法#54": "",
+    "个人所得税专项附加扣除暂行办法#5": "",
+    "个人所得税专项附加扣除暂行办法#6": "",
+    "个人所得税专项附加扣除暂行办法#7": "",
+    "个人所得税专项附加扣除暂行办法#8": "",
+    "个人所得税专项附加扣除暂行办法#9": "",
+    "个人所得税专项附加扣除暂行办法#10": "",
+    "个人所得税专项附加扣除暂行办法#11": "",
+    "个人所得税专项附加扣除暂行办法#12": "",
+    "个人所得税专项附加扣除暂行办法#13": "",
+    "个人所得税专项附加扣除暂行办法#14": "",
+    "个人所得税专项附加扣除暂行办法#15": "",
+    "个人所得税专项附加扣除暂行办法#16": "",
+    "个人所得税专项附加扣除暂行办法#17": "",
+    "个人所得税专项附加扣除暂行办法#18": "",
+    "个人所得税专项附加扣除暂行办法#19": "",
+    "个人所得税专项附加扣除暂行办法#20": "",
+    "个人所得税专项附加扣除暂行办法#21": "",
+    "个人所得税专项附加扣除暂行办法#22": "",
+    "反不正当竞争法#6": "",
+    "数据安全法#27": ""
+  },
+  "_pending": [
+    {
+      "key": "个人信息保护法#38",
+      "law": "个人信息保护法",
+      "article": 38,
+      "cited_by": [
+        "Q24(expected)"
+      ],
+      "official_source": "全国人大常委会公布（主席令第六十一号，2021-08-20 通过，2021-11-01 施行）。权威文本：国家法律法规数据库 https://flk.npc.gov.cn 或 中国政府网 https://www.gov.cn",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人信息保护法#54",
+      "law": "个人信息保护法",
+      "article": 54,
+      "cited_by": [
+        "Q25(expected)"
+      ],
+      "official_source": "全国人大常委会公布（主席令第六十一号，2021-08-20 通过，2021-11-01 施行）。权威文本：国家法律法规数据库 https://flk.npc.gov.cn 或 中国政府网 https://www.gov.cn",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#5",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 5,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#6",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 6,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#7",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 7,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#8",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 8,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#9",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 9,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#10",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 10,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#11",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 11,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#12",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 12,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#13",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 13,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#14",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 14,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#15",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 15,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#16",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 16,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#17",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 17,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#18",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 18,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#19",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 19,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#20",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 20,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#21",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 21,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "个人所得税专项附加扣除暂行办法#22",
+      "law": "个人所得税专项附加扣除暂行办法",
+      "article": 22,
+      "cited_by": [
+        "Q6(also)"
+      ],
+      "official_source": "国务院规范性文件（国发〔2018〕41号，2018-12-13 印发，2019-01-01 施行），中国政府网 https://www.gov.cn 全文公布。",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "反不正当竞争法#6",
+      "law": "反不正当竞争法",
+      "article": 6,
+      "cited_by": [
+        "Q27(expected)"
+      ],
+      "official_source": "全国人大常委会公布（2019-04-23 修正；现行主席令为 2019 年修正版）。权威文本：国家法律法规数据库 https://flk.npc.gov.cn 或 中国政府网 https://www.gov.cn",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    },
+    {
+      "key": "数据安全法#27",
+      "law": "数据安全法",
+      "article": 27,
+      "cited_by": [
+        "Q26(expected)"
+      ],
+      "official_source": "全国人大常委会公布（主席令第八十四号，2021-06-10 通过，2021-09-01 施行）。权威文本：国家法律法规数据库 https://flk.npc.gov.cn 或 中国政府网 https://www.gov.cn",
+      "status": "PENDING_HUMAN_VERIFICATION",
+      "filled_text_len": 0
+    }
+  ]
+}
