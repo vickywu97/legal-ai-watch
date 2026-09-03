@@ -109,9 +109,9 @@
 ### 改动清单
 - `scripts/faithfulness.py`（新增，纯 stdlib）：`FaithfulnessChecker` + `containment`/`jaccard`/`char_bigrams`/`normalize_text`。默认指标 `containment`（阈值 0.45），`jaccard` 保留为 ablation 对照；`is_faithful()` 返回 `True/False/None`（None=无官方正文或作答过短→跳过，绝不误报）。
 - `scripts/verifier.py`：新增 `FAITHFULNESS_FAIL="✗F"` 常量（**不在** `HALLUCINATION_STATUSES`，故 HVI 不变）；`verify()` 增加 opt-in 参数 `faithfulness=None`；三条 ✓ 返回路径经 `_emit_ok()` 统一处理——仅当 checker 给出 `False` 才降级为 `✗F`，且结果带 `faithfulness_checked` / `faithfulness_score` 字段。
-- `config/article_texts.json`（**已扩至 38 条**）：键 `law#article` → 官方条文**全文**，逐条取自 legal-hallucination-bench 的 `knowledge_base/laws/statutes.jsonl`（2327 条，verification_status 全 `verified`，源自全国人大/中国政府网官方文本），**不凭记忆撰写**；覆盖 39 题全部预期引注（benchmark 引用的法条全覆盖，无遗漏即零 UNCOVERED）。仍缺失的法条 `is_faithful()` 返回 `None` 跳过。
+- `config/article_texts.json`（**已扩至 60 条，_uncovered=0**）：键 `law#article` → 官方条文**全文**。其中 38 条逐条取自 legal-hallucination-bench 的 `knowledge_base/laws/statutes.jsonl`（2327 条，verification_status 全 `verified`，源自全国人大/中国政府网官方文本）；**另有 22 条范围外规范的官方全文由用户提供的官方 .doc 原文（flk.npc.gov.cn / www.gov.cn 下载件）逐条抽取填入并标记 VERIFIED**（个人所得税专项附加扣除暂行办法 #5–#22、个人信息保护法 #38/#54、反不正当竞争法 #6、数据安全法 #27）。**全部不凭记忆撰写**；39 题的全部引注均已纳入 ✗F 覆盖，无遗漏。
   - **重新生成**：`python scripts/build_article_texts.py`（自动探测 LHB 的 `statutes.jsonl`；`--dry-run` 仅预览；`--kb` 显式指定路径；幂等——KB/题目不变则产物不变）。脚本只从已核验 KB 抽取，绝不凭记忆撰写条文。
-  - **范围外规范（22 条缺口）人工核验工作流**：38 条之外，39 题还引用了 22 个 8 部法之外的法条（个人所得税专项附加扣除暂行办法 #5–#22、个人信息保护法 #38/#54、反不正当竞争法 #6、数据安全法 #27），✗F 目前对它们跳过（`_uncovered`）。这些**不在 LHB KB 内**，须律师从官方原文逐条核对填入：`--emit-pending config/article_texts_unverified.json` 生成留空模板（幂等，带 `cited_by`/`official_source`/`status`），填正文并把 `status` 置 `VERIFIED` 后 `--merge-pending` 合并进主库（仅接受 VERIFIED 且非空者，主库 `_uncovered` 同步减少，合并条目在普通 regen 时被 `old_texts` 保留）。详见 `docs/ARTICLE_TEXTS_PENDING.md`。
+  - **范围外规范（22 条缺口）人工核验工作流（已完成）**：38 条之外，39 题还引用了 22 个 8 部法之外的法条（个人所得税专项附加扣除暂行办法 #5–#22、个人信息保护法 #38/#54、反不正当竞争法 #6、数据安全法 #27），这些**不在 LHB KB 内**，须律师从官方原文逐条核对填入。工作流：`--emit-pending config/article_texts_unverified.json` 生成留空模板（幂等，带 `cited_by`/`official_source`/`status`）；用户于 2026-09-03 提供 4 份官方 .doc 下载件，22 条已逐条抽取填入并标记 `VERIFIED`，经 `--merge-pending` 合并进主库（仅接受 VERIFIED 且非空者，主库 `_uncovered` 归零，合并条目在普通 regen 时被 `old_texts` 保留）。⚠️ 反不正当竞争法为用户提供的 **2025 修订版**，其第 6 条已重排为「社会监督」，旧法「混淆行为」移至第 7 条——若 Q27 预期「混淆行为」内容，其引注应改为 #7（基准题目层面时序一致性问题，不在 ✗F 文本层解决）。详见 `docs/ARTICLE_TEXTS_PENDING.md`。
 - `scripts/run_eval.py`：导入 `FaithfulnessChecker`；新增 `--check-faithfulness` 开关（默认关闭）+ `--faithfulness-metric`（`containment`/`jaccard`，默认 containment）+ `--faithfulness-threshold`（默认 0.45）；开启时加载 `article_texts.json` 并传入 `verify()`；`_STATUS_PRIORITY` 加入 `✗F`；`aggregate_samples` 增加 `_faithfulness_checked` / `_faithfulness_fail` 计数；`build_leaderboard` 增加独立副指标 `content_fidelity = (checked-fail)/checked`（未开启时为 `null`）。
 - `scripts/generate_dashboard.py`：诊断矩阵图例补 `✗F`（橙色 `warn`），`statusClass` 映射 `✗F→warn`，CSS 补 `.cell.warn` / `.lg.warn`。
 - `tests/test_faithfulness.py`（新增）：纯函数单测（归一化 / Jaccard 边界 / 忠实-不忠实-跳过 三类判定）+ `TestCalibrationProbe`（用真实 `article_texts.json` 锁住 containment+0.45 的分离性质：忠实样本全 ≥ 阈值、不忠实样本全 < 阈值、两簇间存在干净空隙，作为回归护栏）。
@@ -127,10 +127,10 @@ python scripts/run_eval.py --date 2026-09-02 --check-faithfulness
 
 ### 待办 / 开放问题
 1. **阈值标定（已完成）**：默认阈值经 `TestCalibrationProbe` 的 8 组标注样本标定至 **0.45**（containment 指标下，忠实样本 0.538–0.857、不忠实样本 0.129–0.387，空隙 (0.387, 0.538)）。样本量仍小，后续可用更大标注集收紧；`--faithfulness-threshold` 可临时扫描。
-2. **正文扩写（已完成）**：`article_texts.json` 已从 10 条种子扩到 **38 条官方全文**，覆盖 39 题全部预期引注，来源为已核验 KB，无凭记忆撰写。
+2. **正文扩写（已完成）**：`article_texts.json` 已从 10 条种子扩到 **60 条官方全文**（38 条来自已核验 KB + 22 条来自用户提供的官方 .doc），覆盖 39 题**全部**预期引注（`_uncovered=0`），无凭记忆撰写。
 3. **粒度升级**（可选）：本地 embedding 替代字符二元文法，提升语义捕获能力（引入本地模型依赖）。
 4. **测试（已绿）**：`pytest -q` → 62 passed（含 `TestCalibrationProbe`），无 error。
-5. **范围外规范覆盖（模板就绪，待人工核验）**：22 条 8 部法之外缺口的留空模板 `config/article_texts_unverified.json` 已生成，工作流（`--emit-pending` / `--merge-pending`）与 `docs/ARTICLE_TEXTS_PENDING.md`  checklist 已就位；正文须由律师从官方原文逐条核验填入后方可合并生效。
+5. **范围外规范覆盖（已完成）**：22 条 8 部法之外缺口已由用户提供的官方 .doc 原文逐条抽取填入并 `VERIFIED`，经 `--merge-pending` 合并进主库，`_uncovered` 归零。⚠️ 反不正当竞争法为用户提供的 **2025 修订版**，其第 6 条已重排为「社会监督」（旧「混淆行为」移至第 7 条）——若 Q27 预期「混淆行为」内容，引注应改为 #7（基准题目层面时序一致性问题，不在 ✗F 文本层解决）。模板与工作流保留供后续扩展。
 
 ### 标定记录（为何从 Jaccard 0.15 切到 containment 0.45）
 - 旧方案 Jaccard（阈值 0.15）以**节选**参考测出"答对 0.203、答错 0.028"的分离；但换成**官方全文**作参考后：
