@@ -1,7 +1,7 @@
 {
-  "_NOTE": "内容忠实度(✗F) 校验用的官方法条【全文】正文。键为 'law#article'（与 verifier.normalize_law_name 归一化后的 canonical 形式一致，见 scripts/verifier.py）。正文来源：legal-hallucination-bench 的 knowledge_base/laws/statutes.jsonl（2327 条，verification_status 全为 verified，逐条取自全国人大/中国政府网官方文本）。本文件由脚本从该 KB 抽取生成，不凭记忆撰写任何条文。缺失法条 checker 自动跳过（不判 ✗F），缺口清单见 _uncovered 字段。✗F 默认指标为 containment（|A∩B|/|A|），对参考文本长度不敏感，故此处使用完整条文而非节选；阈值标定见 docs/XF_CONTENT_FAITHFULNESS_DESIGN.md。",
+  "_NOTE": "内容忠实度(✗F) 校验用的官方法条【全文】正文。键为 'law#article'（与 verifier 归一化后的 canonical 形式一致，见 scripts/verifier.py）。正文由 scripts/build_article_texts.py 从 legal-hallucination-bench 的 knowledge_base/laws/statutes.jsonl 抽取生成（2327 条，verification_status 全为 verified，逐条取自全国人大/中国政府网官方文本），不凭记忆撰写任何条文。KB 未覆盖的法条 checker 自动跳过（不判 ✗F），缺口清单见 _uncovered。✗F 默认指标为 containment（|A∩B|/|A|），对参考文本长度不敏感，故此处使用完整条文；阈值标定见 docs/XF_CONTENT_FAITHFULNESS_DESIGN.md。",
   "_source": {
-    "generated_by": "从 LHB verified statutes.jsonl 抽取（复现命令见 CHANGELOG）",
+    "generated_by": "scripts/build_article_texts.py",
     "kb": "legal-hallucination-bench/knowledge_base/laws/statutes.jsonl",
     "kb_rows": 2327,
     "kb_verification_status": "verified (100%)",
