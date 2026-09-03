@@ -73,7 +73,7 @@
 | `?` | 无法判定（知识库未覆盖）| 不计入 |
 | `·` | 未作答（未识别到引注）| 仅计入 Coverage/Integrity 分母（拉低），不计入 HVI 分母 |
 
-> **判定范围说明**：本引擎为**确定性引注核验**，核验「法条是否真实存在」「是否编造不存在的法条（NOT_FOUND, ✗NF）」「是否为错引的真实法条（✗MA）」与「是否援引已废止或旧版本法条（时态幻觉, ✗T）」。其中 **✗NF** 通过 `config/statute_equivalence.json` 的 `article_ranges`（每法有效条号范围）判定：现行法引注的条号超出该法已知有效范围即视为法条不存在。**内容忠实度（✗F）** 已作为**可选增强层**落地（`scripts/faithfulness.py`，`--check-faithfulness` 开启，默认关闭）：用纯标准库的字符二元文法 Jaccard 相似度，比对模型作答与官方法条正文（`config/article_texts.json`），低于阈值即判 ✗F。**✗F 不计入 HVI/CRFI**（主榜单保持确定性不变），仅以独立副指标 `Content Fidelity` 报告，看板以橙色标注。升级为本地 embedding 或 LLM 裁判可提升语义粒度，但会引入非确定性与外部依赖，故默认不选。
+> **判定范围说明**：本引擎为**确定性引注核验**，核验「法条是否真实存在」「是否编造不存在的法条（NOT_FOUND, ✗NF）」「是否为错引的真实法条（✗MA）」与「是否援引已废止或旧版本法条（时态幻觉, ✗T）」。其中 **✗NF** 通过 `config/statute_equivalence.json` 的 `article_ranges`（每法有效条号范围）判定：现行法引注的条号超出该法已知有效范围即视为法条不存在。**内容忠实度（✗F）** 已作为**可选增强层**落地（`scripts/faithfulness.py`，`--check-faithfulness` 开启，默认关闭）：用纯标准库的**字符二元文法 containment 相似度**（containment = |A∩B|/|A|，对参考长度不敏感；Jaccard 仅留作 ablation 对照），比对模型作答与官方条文**全文**（`config/article_texts.json`，38 条，取自已核验 KB），低于阈值（默认 0.45，经 8 组标注样本标定）即判 ✗F。**✗F 不计入 HVI/CRFI**（主榜单保持确定性不变），仅以独立副指标 `Content Fidelity` 报告，看板以橙色标注。升级为本地 embedding 或 LLM 裁判可提升语义粒度，但会引入非确定性与外部依赖，故默认不选。
 
 排序：已作答模型（存在有效引注）排前，按 **HVI 升序 → 引注数降序 → api_errors 升序**；无任何有效引注的模型（全 ✗ERR 或全 ·）HVI 记为 `null`，排末位、无排名。
 

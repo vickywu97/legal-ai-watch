@@ -273,15 +273,20 @@ def load_json(path: Path):
 
 def run_evaluation(eval_date: str, output_root: Path, demo: bool = False,
                    samples: int = 3, locale: str = "zh", limit: int = 0,
-                   check_faithfulness: bool = False):
+                   check_faithfulness: bool = False,
+                   faithfulness_metric: str = "containment",
+                   faithfulness_threshold: float = 0.45):
     models = load_json(CONFIG_DIR / "models.json")["models"]
     questions = load_json(CONFIG_DIR / "questions.json")["questions"]
     eq = Equivalence.load(EQUIV_PATH)
     faithfulness = None
     if check_faithfulness:
-        faithfulness = FaithfulnessChecker.load(ARTICLE_TEXTS_PATH)
+        faithfulness = FaithfulnessChecker.load(
+            ARTICLE_TEXTS_PATH, threshold=faithfulness_threshold,
+            metric=faithfulness_metric)
         print(f"[info] content-faithfulness (✗F) ENABLED: "
               f"{len(faithfulness.texts)} article texts loaded; "
+              f"metric={faithfulness.metric}, threshold={faithfulness.threshold}; "
               f"uncovered articles are skipped (no false ✗F).", flush=True)
     system_prompt = _load_prompts(locale)
 
@@ -528,13 +533,27 @@ def main():
     ap.add_argument("--check-faithfulness", action="store_true",
                     help="enable optional ✗F content-faithfulness layer (stdlib, "
                          "default OFF; never changes HVI)")
+    ap.add_argument("--faithfulness-metric", choices=["containment", "jaccard"],
+                    default="containment",
+                    help="✗F similarity metric (default containment). jaccard is kept "
+                         "for ablation only: its union denominator grows with the "
+                         "official text and biases scores low, false-flagging correct "
+                         "but concise answers.")
+    ap.add_argument("--faithfulness-threshold", type=float, default=0.45,
+                    help="✗F threshold (default 0.45, recalibrated on 8 labelled "
+                         "probes against the full-text reference set; the faithful "
+                         "cluster (>=0.538) and unfaithful cluster (<=0.387) leave a "
+                         "clean gap, 0.45 sits inside it toward the unfaithful side). "
+                         "See docs/XF_CONTENT_FAITHFULNESS_DESIGN.md.")
     args = ap.parse_args()
 
     output_root = Path(args.output)
     output_root.mkdir(parents=True, exist_ok=True)
     run_evaluation(args.date, output_root, demo=args.demo, samples=args.samples,
                    locale=args.locale, limit=args.limit,
-                   check_faithfulness=args.check_faithfulness)
+                   check_faithfulness=args.check_faithfulness,
+                   faithfulness_metric=args.faithfulness_metric,
+                   faithfulness_threshold=args.faithfulness_threshold)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # ✗F（内容忠实度）状态 · 设计草案
 
-> 状态：**PoC 已实现（待评审 / 待 push 后验证）**。基于方案 B 的 stdlib 变体落地（字符二元文法 Jaccard，零依赖、零 API、确定性）。改动：`scripts/faithfulness.py` + `verifier.py`（opt-in）+ `config/article_texts.json`（种子）+ `run_eval.py`（`--check-faithfulness`）+ `generate_dashboard.py`（橙色标注）+ `tests/test_faithfulness.py`。**默认关闭，不计入 HVI**。详见 §7。
+> 状态：**已落地 + 已标定 + 测试全绿（待 push）**。指标基于方案 B 的 stdlib 变体，已从字符二元文法 Jaccard **切换为 containment**（containment = |A∩B|/|A|，对参考长度不敏感），默认阈值经 8 组标注样本标定至 **0.45**。零依赖、零 API、确定性、可复现。改动：`scripts/faithfulness.py` + `verifier.py`（opt-in）+ `config/article_texts.json`（**38 条全文，取自已核验 KB**）+ `run_eval.py`（`--check-faithfulness` / `--faithfulness-metric` / `--faithfulness-threshold`）+ `generate_dashboard.py`（橙色标注）+ `tests/test_faithfulness.py`。**默认关闭，不计入 HVI**。详见 §7。
 > 关联：`METHODOLOGY.md` §4 状态体系、`scripts/verifier.py`。
 
 ---
@@ -100,18 +100,19 @@
 ## 6. 结论与下一步
 
 - `✗F` 已作为**可选增强层**实现，默认关闭，绝不破坏现有确定性基线（不计入 HVI/CRFI）。
-- 落地采用**方案 B 的 stdlib 变体**：字符二元文法 Jaccard 相似度（非 embedding，零依赖、零 API、完全可复现），契合项目"确定性、可审计"原则。
+- 落地采用**方案 B 的 stdlib 变体**：字符二元文法相似度（非 embedding，零依赖、零 API、完全可复现），契合项目"确定性、可审计"原则。
+- **指标实测后由 Jaccard 切换为 containment**：Jaccard 的分母含并集，官方正文越长分数被系统性压低，导致"答对的简洁回答被误判 ✗F"且判别力崩塌（详见 §7 标定记录）；containment = |A∩B|/|A| 对参考长度不敏感，且更贴合"模型说的话有没有官方依据"的语义。`jaccard` 仍保留为 ablation 对照指标。
 - 仍是 PoC：语义粒度较粗，仅捕获极端内容失真；后续可升级为本地 embedding 或 LLM 裁判以提升粒度（代价：非确定性 / 外部依赖）。
 
 ## 7. 实现状态（2026-09-02 PoC）
 
 ### 改动清单
-- `scripts/faithfulness.py`（新增，纯 stdlib）：`FaithfulnessChecker` + `jaccard`/`char_bigrams`/`normalize_text`。`is_faithful()` 返回 `True/False/None`（None=无官方正文或作答过短→跳过，绝不误报）。
+- `scripts/faithfulness.py`（新增，纯 stdlib）：`FaithfulnessChecker` + `containment`/`jaccard`/`char_bigrams`/`normalize_text`。默认指标 `containment`（阈值 0.45），`jaccard` 保留为 ablation 对照；`is_faithful()` 返回 `True/False/None`（None=无官方正文或作答过短→跳过，绝不误报）。
 - `scripts/verifier.py`：新增 `FAITHFULNESS_FAIL="✗F"` 常量（**不在** `HALLUCINATION_STATUSES`，故 HVI 不变）；`verify()` 增加 opt-in 参数 `faithfulness=None`；三条 ✓ 返回路径经 `_emit_ok()` 统一处理——仅当 checker 给出 `False` 才降级为 `✗F`，且结果带 `faithfulness_checked` / `faithfulness_score` 字段。
-- `config/article_texts.json`（新增，种子）：键 `law#article` → 官方法条正文；当前覆盖 10 个高频法条（民法典577/181/188/1182/23/71、公司法162/57/23、增值税法22），缺失法条自动跳过。**正文须以官方发布文本核对后再扩写**。
+- `config/article_texts.json`（**已扩至 38 条**）：键 `law#article` → 官方条文**全文**，逐条取自 legal-hallucination-bench 的 `knowledge_base/laws/statutes.jsonl`（2327 条，verification_status 全 `verified`，源自全国人大/中国政府网官方文本），**不凭记忆撰写**；覆盖 39 题全部预期引注（benchmark 引用的法条全覆盖，无遗漏即零 UNCOVERED）。仍缺失的法条 `is_faithful()` 返回 `None` 跳过。
 - `scripts/run_eval.py`：导入 `FaithfulnessChecker`；新增 `--check-faithfulness` 开关（默认关闭）；开启时加载 `article_texts.json` 并传入 `verify()`；`_STATUS_PRIORITY` 加入 `✗F`；`aggregate_samples` 增加 `_faithfulness_checked` / `_faithfulness_fail` 计数；`build_leaderboard` 增加独立副指标 `content_fidelity = (checked-fail)/checked`（未开启时为 `null`）。
 - `scripts/generate_dashboard.py`：诊断矩阵图例补 `✗F`（橙色 `warn`），`statusClass` 映射 `✗F→warn`，CSS 补 `.cell.warn` / `.lg.warn`。
-- `tests/test_faithfulness.py`（新增）：纯函数单测（归一化 / Jaccard 边界 / 忠实-不忠实-跳过 三类判定）。
+- `tests/test_faithfulness.py`（新增）：纯函数单测（归一化 / Jaccard 边界 / 忠实-不忠实-跳过 三类判定）+ `TestCalibrationProbe`（用真实 `article_texts.json` 锁住 containment+0.45 的分离性质：忠实样本全 ≥ 阈值、不忠实样本全 < 阈值、两簇间存在干净空隙，作为回归护栏）。
 
 ### 如何启用
 ```bash
@@ -123,7 +124,16 @@ python scripts/run_eval.py --date 2026-09-02 --check-faithfulness
 ```
 
 ### 待办 / 开放问题
-1. **阈值标定**：默认 `0.15` 为保守初值，需用**标注样本**（正确概括 vs 事实错误）标定；过高误报、过低漏报。
-2. **正文扩写**：`article_texts.json` 仅种子 10 条，须核对官方文本并覆盖全部 39 题预期引注。
+1. **阈值标定（已完成）**：默认阈值经 `TestCalibrationProbe` 的 8 组标注样本标定至 **0.45**（containment 指标下，忠实样本 0.538–0.857、不忠实样本 0.129–0.387，空隙 (0.387, 0.538)）。样本量仍小，后续可用更大标注集收紧；`--faithfulness-threshold` 可临时扫描。
+2. **正文扩写（已完成）**：`article_texts.json` 已从 10 条种子扩到 **38 条官方全文**，覆盖 39 题全部预期引注，来源为已核验 KB，无凭记忆撰写。
 3. **粒度升级**（可选）：本地 embedding 替代字符二元文法，提升语义捕获能力（引入本地模型依赖）。
-4. **测试**：`tests/test_faithfulness.py` 已写，但本次改动未经 Bash 运行验证（沙箱环境受限），待 push 后补跑 `pytest`。
+4. **测试（已绿）**：`pytest -q` → 62 passed（含 `TestCalibrationProbe`），无 error。
+
+### 标定记录（为何从 Jaccard 0.15 切到 containment 0.45）
+- 旧方案 Jaccard（阈值 0.15）以**节选**参考测出"答对 0.203、答错 0.028"的分离；但换成**官方全文**作参考后：
+  - 公司法#162「答对」样本 Jaccard 被长文本压到 **0.093 → 误判 ✗F**；
+  - 且该「答对」(0.093) **低于**「答错」(0.108)，**判别力崩塌**。
+- 改用 **containment = |A∩B|/|A|**（对参考长度不敏感）后，同一批全文参考：
+  - 忠实样本 0.538–0.857，不忠实样本 0.129–0.387，空隙干净；
+  - 默认 0.45 落在空隙内、偏不忠实侧（更好召回真实失真），距最低忠实样本仍有 0.088 余量（宁可漏报、不可误报）。
+- 注：不忠实样本最高分 0.387（民法典#188「二十年」错答）源于全文含"二十年"等词带来的虚假重合——这正是 containment 优于 Jaccard 但仍需阈值留余量的原因；0.45 已将其正确判为 ✗F。
