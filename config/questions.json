@@ -650,6 +650,15 @@
       "prompt_en": "What items of income are subject to individual income tax? How are the four comprehensive-income items taxed?",
       "expected_citation": "《个人所得税法》第2条",
       "verifiable": true
+    },
+    {
+      "qid": 64,
+      "domain": "竞争法",
+      "prompt": "《反不正当竞争法》对不正当竞争行为的社会监督作了何种规定？国家机关及其工作人员、行业组织分别负有何义务？",
+      "prompt_en": "What does the Anti-Unfair-Competition Law provide regarding social supervision of unfair competition? What duties bind state organs and industry organisations?",
+      "expected_citation": "《反不正当竞争法》第6条",
+      "verifiable": true,
+      "note": "据2025修订版，社会监督为第6条；2019版为第5条，条号已调整。#5=监督检查部门，#7=混淆行为。"
     }
   ]
 }
