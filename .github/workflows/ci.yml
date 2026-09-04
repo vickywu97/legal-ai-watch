@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Regression gate (pytest)
+        # Blocks merges that regress the verifier / faithfulness / metrics /
+        # retry logic. A broken verifier would silently corrupt the leaderboard,
+        # so this runs before any paid API call (also enforced in weekly-eval).
+        run: python -m pytest tests/ -q
+
+      - name: Reference library integrity (article_texts)
+        # article_texts.json is committed to main; guard its invariants so a
+        # regression can't silently drop coverage (_uncovered > 0) or shrink
+        # the official-full-text reference set.
+        run: python -c "import json; d=json.load(open('config/article_texts.json')); n=len(d['article_texts']); u=len(d.get('_uncovered',[])); assert n>=60 and u==0, (n,u); print('article_texts OK:', n, 'entries, _uncovered=', u)"
