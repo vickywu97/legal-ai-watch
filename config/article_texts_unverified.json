@@ -28,7 +28,28 @@
     "个人所得税专项附加扣除暂行办法#22": "",
     "反不正当竞争法#6": "",
     "反不正当竞争法#7": "",
-    "数据安全法#27": ""
+    "数据安全法#27": "",
+    "民法典#509": "",
+    "民法典#590": "",
+    "民法典#563": "",
+    "民法典#595": "",
+    "民法典#680": "",
+    "民法典#1165": "",
+    "民法典#1167": "",
+    "民法典#997": "",
+    "公司法#3": "",
+    "公司法#4": "",
+    "公司法#21": "",
+    "公司法#63": "",
+    "刑法#232": "",
+    "刑法#234": "",
+    "刑法#263": "",
+    "刑法#266": "",
+    "专利法#11": "",
+    "专利法#22": "",
+    "专利法#65": "",
+    "增值税法#25": "",
+    "个人所得税法#2": ""
   },
   "_pending": [
     {
@@ -306,6 +327,258 @@
       "status": "MERGED",
       "filled_text_len": 160,
       "verified_from": "user-provided official .doc (2026-09-03 download)"
+    },
+    {
+      "key": "民法典#509",
+      "law": "民法典",
+      "article": 509,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 91,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "民法典#590",
+      "law": "民法典",
+      "article": 590,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 126,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "民法典#563",
+      "law": "民法典",
+      "article": 563,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 202,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "民法典#595",
+      "law": "民法典",
+      "article": 595,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 33,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "民法典#680",
+      "law": "民法典",
+      "article": 680,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 121,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "民法典#1165",
+      "law": "民法典",
+      "article": 1165,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 66,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "民法典#1167",
+      "law": "民法典",
+      "article": 1167,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 50,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "民法典#997",
+      "law": "民法典",
+      "article": 997,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 85,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "公司法#3",
+      "law": "公司法",
+      "article": 3,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 62,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "公司法#4",
+      "law": "公司法",
+      "article": 4,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 85,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "公司法#21",
+      "law": "公司法",
+      "article": 21,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 86,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "公司法#63",
+      "law": "公司法",
+      "article": 63,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 149,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "刑法#232",
+      "law": "刑法",
+      "article": 232,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 52,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "刑法#234",
+      "law": "刑法",
+      "article": 234,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 116,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "刑法#263",
+      "law": "刑法",
+      "article": 263,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 200,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "刑法#266",
+      "law": "刑法",
+      "article": 266,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 137,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "专利法#11",
+      "law": "专利法",
+      "article": 11,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 194,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "专利法#22",
+      "law": "专利法",
+      "article": 22,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 241,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "专利法#65",
+      "law": "专利法",
+      "article": 65,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 289,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "增值税法#25",
+      "law": "增值税法",
+      "article": 25,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 107,
+      "verified_from": "LHB verified KB (no memory)"
+    },
+    {
+      "key": "个人所得税法#2",
+      "law": "个人所得税法",
+      "article": 2,
+      "cited_by": [
+        "(候选题目，待律师核验)"
+      ],
+      "official_source": "legal-hallucination-bench 已核验 KB (knowledge_base/laws/statutes.jsonl, verification_status=verified, 2327 节点)",
+      "status": "MERGED",
+      "filled_text_len": 220,
+      "verified_from": "LHB verified KB (no memory)"
     }
   ]
 }
