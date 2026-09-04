@@ -458,6 +458,198 @@
       "expected_citation": "《增值税法》第22条",
       "also_correct": [],
       "verifiable": true
+    },
+    {
+      "qid": 40,
+      "domain": "民法",
+      "prompt": "合同履行应遵循哪些原则？除按约定全面履行外，当事人还应履行哪些附随义务？",
+      "prompt_en": "What principles govern contract performance? Beyond full performance per the agreement, what ancillary duties must the parties observe?",
+      "expected_citation": "《民法典》第509条",
+      "verifiable": true
+    },
+    {
+      "qid": 41,
+      "domain": "民法",
+      "prompt": "当事人一方因不可抗力不能履行合同的，责任如何承担？若当事人迟延履行后才发生不可抗力，能否免除违约责任？",
+      "prompt_en": "If a party cannot perform due to force majeure, how is liability allocated? If force majeure occurs after a delay in performance, is liability exempted?",
+      "expected_citation": "《民法典》第590条",
+      "verifiable": true
+    },
+    {
+      "qid": 42,
+      "domain": "民法",
+      "prompt": "具备哪些法定情形时，当事人可以解除合同？",
+      "prompt_en": "Under what statutory circumstances may a party rescind a contract?",
+      "expected_citation": "《民法典》第563条",
+      "verifiable": true
+    },
+    {
+      "qid": 43,
+      "domain": "民法",
+      "prompt": "《民法典》如何定义买卖合同？",
+      "prompt_en": "How does the Civil Code define a sales contract?",
+      "expected_citation": "《民法典》第595条",
+      "verifiable": true
+    },
+    {
+      "qid": 44,
+      "domain": "民法",
+      "prompt": "法律对高利放贷持何态度？借款合同对支付利息没有约定或约定不明确、且不能达成补充协议的，利息如何认定？自然人之间借款的如何处理？",
+      "prompt_en": "What is the law's stance on usurious lending? If a loan contract is silent or ambiguous on interest and no supplementary agreement is reached, how is interest determined? How are loans between natural persons treated?",
+      "expected_citation": "《民法典》第680条",
+      "verifiable": true
+    },
+    {
+      "qid": 45,
+      "domain": "民法",
+      "prompt": "行为人因过错侵害他人民事权益造成损害的，应承担何种责任？在法律规定推定过错的情形下，举证责任由谁承担？",
+      "prompt_en": "What liability arises when a person faultlessly infringes another's civil rights and causes damage? Where fault is presumptively imputed by law, who bears the burden of proof?",
+      "expected_citation": "《民法典》第1165条",
+      "verifiable": true
+    },
+    {
+      "qid": 46,
+      "domain": "民法",
+      "prompt": "侵权行为危及他人人身、财产安全的，被侵权人有权请求侵权人承担哪些侵权责任？",
+      "prompt_en": "Where an infringing act endangers another's person or property, what tort liabilities may the victim demand?",
+      "expected_citation": "《民法典》第1167条",
+      "verifiable": true
+    },
+    {
+      "qid": 47,
+      "domain": "民法",
+      "prompt": "民事主体有证据证明他人正在实施或即将实施侵害其人格权的违法行为，不及时制止将使其合法权益受到难以弥补的损害的，可采取何种救济？",
+      "prompt_en": "Where a person has evidence that another is committing or about to commit an act infringing their personality rights, and delay would cause irreparable harm, what relief is available?",
+      "expected_citation": "《民法典》第997条",
+      "verifiable": true
+    },
+    {
+      "qid": 48,
+      "domain": "民法",
+      "prompt": "侵害他人人身权益造成财产损失的，赔偿数额如何确定？",
+      "prompt_en": "Where infringement of personality rights causes property loss, how is the amount of damages determined?",
+      "expected_citation": "《民法典》第1182条",
+      "verifiable": true
+    },
+    {
+      "qid": 49,
+      "domain": "民法",
+      "prompt": "无民事行为能力人、限制民事行为能力人的监护人与其法定代理人是何关系？",
+      "prompt_en": "What is the relationship between the guardian and the statutory agent of a person with no or limited civil capacity?",
+      "expected_citation": "《民法典》第23条",
+      "verifiable": true
+    },
+    {
+      "qid": 50,
+      "domain": "民法",
+      "prompt": "法人清算程序和清算组职权依照有关法律的规定；没有规定的，如何适用？",
+      "prompt_en": "Where the law is silent on a legal person's liquidation procedure and the liquidation group's powers, what law applies?",
+      "expected_citation": "《民法典》第71条",
+      "verifiable": true
+    },
+    {
+      "qid": 51,
+      "domain": "公司法",
+      "prompt": "公司是否为企业法人、享有独立法人财产？公司以其什么财产对公司的债务承担责任？",
+      "prompt_en": "Is a company a legal person with independent property? With what property does it bear liability for its debts?",
+      "expected_citation": "《公司法》第3条",
+      "verifiable": true
+    },
+    {
+      "qid": 52,
+      "domain": "公司法",
+      "prompt": "有限责任公司与股份有限公司的股东分别以其什么为限对公司承担责任？公司股东依法享有哪些权利？",
+      "prompt_en": "To what extent are LLC and joint-stock company shareholders liable to the company? What rights do shareholders enjoy?",
+      "expected_citation": "《公司法》第4条",
+      "verifiable": true
+    },
+    {
+      "qid": 53,
+      "domain": "公司法",
+      "prompt": "股东应当遵守哪些义务、不得如何行使股东权利？股东滥用股东权利给公司或其他股东造成损失的，应承担何种责任？",
+      "prompt_en": "What duties bind shareholders and how may they not exercise their rights? What liability follows abuse of shareholder rights causing loss?",
+      "expected_citation": "《公司法》第21条",
+      "verifiable": true
+    },
+    {
+      "qid": 54,
+      "domain": "公司法",
+      "prompt": "董事会不能履行或不履行召集股东会会议职责的，由谁召集和主持？代表十分之一以上表决权的股东在此情形下有何权利？",
+      "prompt_en": "If the board fails to convene a shareholders' meeting, who convenes and presides? What right does a shareholder holding ≥1/10 of voting rights have?",
+      "expected_citation": "《公司法》第63条",
+      "verifiable": true
+    },
+    {
+      "qid": 55,
+      "domain": "刑法",
+      "prompt": "故意杀人的，法定刑如何规定？情节较轻的如何量刑？",
+      "prompt_en": "What is the statutory penalty for intentional homicide? How is a lesser circumstance sentenced?",
+      "expected_citation": "《刑法》第232条",
+      "verifiable": true
+    },
+    {
+      "qid": 56,
+      "domain": "刑法",
+      "prompt": "故意伤害他人身体的，量刑档次如何划分？致人重伤、致人死亡或以特别残忍手段致人重伤造成严重残疾的，如何处理？",
+      "prompt_en": "What are the sentencing tiers for intentional bodily harm? How are serious injury or death treated?",
+      "expected_citation": "《刑法》第234条",
+      "verifiable": true
+    },
+    {
+      "qid": 57,
+      "domain": "刑法",
+      "prompt": "抢劫罪的量刑幅度如何？列举哪些情形处十年以上有期徒刑、无期徒刑或者死刑？",
+      "prompt_en": "What is the sentencing range for robbery? Which circumstances warrant 10+ years, life, or death?",
+      "expected_citation": "《刑法》第263条",
+      "verifiable": true
+    },
+    {
+      "qid": 58,
+      "domain": "刑法",
+      "prompt": "诈骗罪的量刑档次如何划分？",
+      "prompt_en": "What are the sentencing tiers for the crime of fraud?",
+      "expected_citation": "《刑法》第266条",
+      "verifiable": true
+    },
+    {
+      "qid": 59,
+      "domain": "专利",
+      "prompt": "发明和实用新型专利权被授予后，未经专利权人许可，任何单位或者个人不得实施其专利包括哪些具体行为？",
+      "prompt_en": "After a patent is granted, what acts may no one perform without the patentee's licence?",
+      "expected_citation": "《专利法》第11条",
+      "verifiable": true
+    },
+    {
+      "qid": 60,
+      "domain": "专利",
+      "prompt": "授予专利权的发明和实用新型应当具备哪'三性'？新颖性、创造性、实用性分别如何定义？",
+      "prompt_en": "What three attributes must an invention/utility model possess? Define novelty, inventiveness, and utility.",
+      "expected_citation": "《专利法》第22条",
+      "verifiable": true
+    },
+    {
+      "qid": 61,
+      "domain": "专利",
+      "prompt": "未经专利权人许可实施其专利引起纠纷的，专利权人或者利害关系人可以通过哪些途径寻求救济？",
+      "prompt_en": "What remedies are available to a patentee facing unauthorised exploitation of the patent?",
+      "expected_citation": "《专利法》第65条",
+      "verifiable": true
+    },
+    {
+      "qid": 62,
+      "domain": "税法",
+      "prompt": "根据《增值税法》，国务院是否有权制定增值税专项优惠政策？该程序上有何要求？请引用具体法条。",
+      "prompt_en": "Under the VAT Law, is the State Council empowered to enact preferential VAT policies? What procedural requirement (e.g., filing/备案 with the NPC Standing Committee) applies? Cite the specific provision.",
+      "expected_citation": "《增值税法》第25条",
+      "verifiable": true
+    },
+    {
+      "qid": 63,
+      "domain": "税法",
+      "prompt": "个人所得税的应税所得项目包括哪些？其中工资薪金等四项综合所得如何计算征税？",
+      "prompt_en": "What items of income are subject to individual income tax? How are the four comprehensive-income items taxed?",
+      "expected_citation": "《个人所得税法》第2条",
+      "verifiable": true
     }
   ]
 }

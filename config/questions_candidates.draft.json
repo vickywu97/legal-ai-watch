@@ -93,8 +93,8 @@
      "prompt_en": "What remedies are available to a patentee facing unauthorised exploitation of the patent?",
      "expected_citation": "《专利法》第65条"},
     {"qid": 62, "domain": "税法", "verifiable": true,
-     "prompt": "根据《增值税法》，国务院在哪些情形下可以制定增值税专项优惠政策？该程序上有何要求？",
-     "prompt_en": "Under the VAT Law, in what circumstances may the State Council enact preferential VAT policies, and what procedural requirement applies?",
+     "prompt": "根据《增值税法》，国务院是否有权制定增值税专项优惠政策？该程序上有何要求？请引用具体法条。",
+     "prompt_en": "Under the VAT Law, is the State Council empowered to enact preferential VAT policies? What procedural requirement (e.g., filing/备案 with the NPC Standing Committee) applies? Cite the specific provision.",
      "expected_citation": "《增值税法》第25条"},
     {"qid": 63, "domain": "税法", "verifiable": true,
      "prompt": "个人所得税的应税所得项目包括哪些？其中工资薪金等四项综合所得如何计算征税？",
@@ -103,6 +103,7 @@
     {"qid": 64, "domain": "竞争法", "verifiable": true,
      "prompt": "《反不正当竞争法》对不正当竞争行为的社会监督作了何种规定？国家机关及其工作人员、行业组织分别负有何义务？",
      "prompt_en": "What does the Anti-Unfair-Competition Law provide regarding social supervision of unfair competition? What duties bind state organs and industry organisations?",
-     "expected_citation": "《反不正当竞争法》第6条"}
+     "expected_citation": "《反不正当竞争法》第6条",
+     "review_note": "2026-09-05 律师复核称'#6 应为 #5'，但已与用户提供的2025修订.doc原文核对：#5=监督检查部门、#6=社会监督、#7=混淆行为。本题问'社会监督+国家机关/行业组织义务'与#6原文一致，故 #6 正确、不改；若改 #5 反成错引。暂留草稿待用户确认后并入。"}
   ]
 }
