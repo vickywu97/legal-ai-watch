@@ -398,6 +398,222 @@
       "prompt": "居民个人综合所得的应纳税所得额如何计算？其中可减除的'专项附加扣除'由何法条作为计算依据？请引用具体法条。",
       "prompt_en": "How is the taxable income of a resident individual's comprehensive income computed? Which article provides the basis for the 'special additional deductions' (专项附加扣除) deductible within it? Cite the provision.",
       "expected_citation": "《个人所得税法》第6条"
+    },
+    {
+      "qid": 89,
+      "domain": "民法",
+      "expected_citation": "《民法典》第577条",
+      "prompt": "合同当事人一方不履行合同义务或者履行不符合约定的，依法应承担何种违约责任？请引注具体法条。",
+      "prompt_en": "If a party fails to perform its contractual obligations or performs non-conforming, what liability for breach does it bear? Cite the specific article.",
+      "verifiable": true,
+      "note": "违约责任方式：继续履行、采取补救措施、赔偿损失等；易与第584条（损失赔偿额计算）混淆，须引对条。"
+    },
+    {
+      "qid": 90,
+      "domain": "民法",
+      "expected_citation": "《民法典》第584条",
+      "prompt": "合同违约造成对方损失的，损失赔偿额应如何确定（含可得利益与可预见规则）？请引注具体法条。",
+      "prompt_en": "How is the loss-compensation amount determined for a contract breach, including lost profits and the foreseeability rule? Cite the specific article.",
+      "verifiable": true,
+      "note": "损失赔偿额=实际损失+可得利益，且以违约方订立合同时可预见为限；常被误引为第577条（责任方式条款）。"
+    },
+    {
+      "qid": 91,
+      "domain": "民法",
+      "expected_citation": "《民法典》第188条",
+      "prompt": "向人民法院请求保护民事权利的诉讼时效期间为多长？起算点与最长保护期如何规定？请引注具体法条。",
+      "prompt_en": "What is the limitation period for civil-rights protection actions, and how do its commencement and maximum duration work? Cite the specific article.",
+      "verifiable": true,
+      "note": "普通诉讼时效3年（非旧《民法通则》2年）；自知道或应当知道权利受损及义务人之日起算，最长20年。检验模型是否仍按旧法记忆答'2年'。"
+    },
+    {
+      "qid": 92,
+      "domain": "民法",
+      "expected_citation": "《民法典》第1168条",
+      "prompt": "二人以上共同实施侵权行为造成他人损害的，对外责任形态为何？请引注具体法条。",
+      "prompt_en": "When two or more persons jointly commit a tort causing damage, what is their external liability form? Cite the specific article.",
+      "verifiable": true,
+      "note": "共同侵权→连带责任；与第1171条（分别侵权但每一行为足以造成全部损害）区分。"
+    },
+    {
+      "qid": 93,
+      "domain": "刑法",
+      "expected_citation": "《刑法》第264条",
+      "prompt": "盗窃公私财物，数额较大或多次盗窃、入户盗窃、携带凶器盗窃、扒窃的，应如何定罪量刑？请引注具体法条。",
+      "prompt_en": "How is theft of public/private property (by amount, repeatedly, in homes, with weapons, or by pickpocketing) convicted and sentenced? Cite the specific article.",
+      "verifiable": true,
+      "note": "盗窃罪；与第266条（诈骗）、第267条（抢夺）区分；'多次盗窃'无数额门槛。"
+    },
+    {
+      "qid": 94,
+      "domain": "刑法",
+      "expected_citation": "《刑法》第310条",
+      "prompt": "明知是犯罪的人而为其提供隐藏处所、财物帮助逃匿或作假证明包庇的，构成何罪？事前通谋的如何处理？请引注具体法条。",
+      "prompt_en": "Hiding a criminal, providing shelter/assets, or faking proof to help them escape — what offense, and how is prior conspiracy treated? Cite the specific article.",
+      "verifiable": true,
+      "note": "窝藏、包庇罪；事前通谋以共犯论处（非事后帮助）。"
+    },
+    {
+      "qid": 95,
+      "domain": "刑法",
+      "expected_citation": "《刑法》第312条",
+      "prompt": "明知是犯罪所得及其收益而予以窝藏、转移、收购或代为销售的，构成何罪？单位是否可构成本罪主体？请引注具体法条。",
+      "prompt_en": "Concealing/transferring/purchasing crime proceeds — what offense, and can a unit be a subject? Cite the specific article.",
+      "verifiable": true,
+      "note": "掩饰、隐瞒犯罪所得、犯罪所得收益罪；单位可构成本罪（双罚制）。"
+    },
+    {
+      "qid": 96,
+      "domain": "公司法",
+      "expected_citation": "《公司法》第20条",
+      "prompt": "公司从事经营活动时，对职工、消费者、生态环境保护等利益相关者负有何种义务？请引注具体法条。",
+      "prompt_en": "What obligations does a company owe to stakeholders (employees, consumers, ecology) when operating? Cite the specific article.",
+      "verifiable": true,
+      "note": "公司应承担社会责任（利益相关者保护、公益）；非股东有限责任条款（第3条），亦非一人公司条款。"
+    },
+    {
+      "qid": 97,
+      "domain": "公司法",
+      "expected_citation": "《公司法》第16条",
+      "prompt": "公司对职工合法权益负有哪些法定义务（劳动合同、社会保险、劳动保护等）？请引注具体法条。",
+      "prompt_en": "What statutory duties does a company owe to employees' lawful rights (labour contract, social insurance, protection)? Cite the specific article.",
+      "verifiable": true,
+      "note": "2023修订公司法第16条已调整为'职工权益保护'条款；旧法第16条为'转投资/担保决议'。本题检验模型是否仍按旧法记忆误答'担保决议'。"
+    },
+    {
+      "qid": 98,
+      "domain": "公司法",
+      "expected_citation": "《公司法》第34条",
+      "prompt": "公司登记事项发生变更但未办理变更登记的，对善意相对人产生何种效力？请引注具体法条。",
+      "prompt_en": "If a company changes a registered item but fails to update registration, what effect against a bona fide counterparty? Cite the specific article.",
+      "verifiable": true,
+      "note": "未经变更登记不得对抗善意相对人；与内部决议生效区分（登记对抗主义）。"
+    },
+    {
+      "qid": 99,
+      "domain": "公司法",
+      "expected_citation": "《公司法》第180条",
+      "prompt": "董事、监事、高级管理人员对公司负有哪些义务？不担任董事但实际执行公司事务的控股股东、实际控制人是否适用？请引注具体法条。",
+      "prompt_en": "What duties do directors/supervisors/officers owe the company, and do controlling shareholders or actual controllers who de facto run affairs also apply? Cite the specific article.",
+      "verifiable": true,
+      "note": "忠实义务+勤勉义务；事实董事/实质高管（控股股东、实际控制人实际执行事务）亦适用前两款。"
+    },
+    {
+      "qid": 100,
+      "domain": "税法",
+      "expected_citation": "《税收征管法》第31条",
+      "prompt": "纳税人因有特殊困难不能按期缴纳税款的，可否延期缴纳？最长可延期多久、须由哪一级税务机关批准？请引注具体法条。",
+      "prompt_en": "May a taxpayer delay payment for special difficulty; max period and which tax authority approves? Cite the specific article.",
+      "verifiable": true,
+      "note": "延期缴纳最长不超过3个月，经省/自治区/直辖市税务局批准；与第32条（滞纳金，万分之五/日）区分。"
+    },
+    {
+      "qid": 101,
+      "domain": "税法",
+      "expected_citation": "《税收征管法》第38条",
+      "prompt": "税务机关在有根据认为纳税人有逃避纳税义务行为时，可采取哪些税收保全措施？须经何人批准？请引注具体法条。",
+      "prompt_en": "What tax-preservation measures may tax authorities take when escape of payment is suspected, and who must approve? Cite the specific article.",
+      "verifiable": true,
+      "note": "保全措施：书面通知冻结存款、扣押查封；经县以上税务局（分局）局长批准；与第40条（强制执行）区分。"
+    },
+    {
+      "qid": 102,
+      "domain": "税法",
+      "expected_citation": "《税收征管法》第63条",
+      "prompt": "纳税人伪造账簿、多列支出或不列少列收入以不缴少缴税款的，如何定性并处罚？请引注具体法条。",
+      "prompt_en": "How is fabrication of books, overstating expenses, or understating income to evade tax characterised and penalised? Cite the specific article.",
+      "verifiable": true,
+      "note": "偷税（TAX EVASION）；追缴税款+滞纳金+0.5–5倍罚款，构成犯罪的追刑责；与第64条（不申报/虚假申报）区分。"
+    },
+    {
+      "qid": 103,
+      "domain": "专利",
+      "expected_citation": "《专利法》第10条",
+      "prompt": "专利申请权或专利权转让的生效要件是什么（合同形式、登记与公告）？请引注具体法条。",
+      "prompt_en": "What are the effectiveness requirements for assigning a patent application right or patent (form, registration, notice)? Cite the specific article.",
+      "verifiable": true,
+      "note": "转让自登记之日起生效（非合同成立时）；须书面合同+国务院专利行政部门登记并公告。"
+    },
+    {
+      "qid": 104,
+      "domain": "专利",
+      "expected_citation": "《专利法》第26条",
+      "prompt": "申请发明或实用新型专利须提交哪些申请文件？说明书与权利要求书各有什么要求？请引注具体法条。",
+      "prompt_en": "What documents are required to file an invention/utility-model patent, and what are the specification/claims requirements? Cite the specific article.",
+      "verifiable": true,
+      "note": "请求书、说明书、摘要、权利要求书；说明书须清楚完整（所属领域技术人员可实现），权利要求书以说明书为依据、清楚简要限定保护范围。"
+    },
+    {
+      "qid": 105,
+      "domain": "专利",
+      "expected_citation": "《专利法》第60条",
+      "prompt": "国务院专利行政部门作出给予实施强制许可的决定后，须履行哪些程序（通知、登记、公告）？强制许可理由消除后如何处理？请引注具体法条。",
+      "prompt_en": "After a compulsory-licence decision, what procedures (notice, registration, publication) apply, and what happens when its grounds disappear? Cite the specific article.",
+      "verifiable": true,
+      "note": "强制许可须通知专利权人并登记公告；理由消除后依请求终止；与专利权保护期区分。"
+    },
+    {
+      "qid": 106,
+      "domain": "税法",
+      "expected_citation": "《企业所得税法》第1条",
+      "prompt": "企业所得税的纳税义务人包括哪些主体？哪些组织明确不适用本法？请引注具体法条。",
+      "prompt_en": "Who are the taxpayers of enterprise income tax, and which organisations are expressly excluded? Cite the specific article.",
+      "verifiable": true,
+      "note": "纳税人：境内企业和其他取得收入的组织；个人独资企业、合伙企业不适用（缴个人所得税）。"
+    },
+    {
+      "qid": 107,
+      "domain": "税法",
+      "expected_citation": "《企业所得税法》第5条",
+      "prompt": "企业所得税的'应纳税所得额'如何计算（收入总额减除项目）？请引注具体法条。",
+      "prompt_en": "How is 'taxable income' for enterprise income tax computed (gross income minus items)? Cite the specific article.",
+      "verifiable": true,
+      "note": "应纳税所得额=收入总额−不征税收入−免税收入−各项扣除−允许弥补的以前年度亏损。"
+    },
+    {
+      "qid": 108,
+      "domain": "税法",
+      "expected_citation": "《企业所得税法》第28条",
+      "prompt": "符合条件的小型微利企业、国家需要重点扶持的高新技术企业，企业所得税适用税率分别为多少？请引注具体法条。",
+      "prompt_en": "What reduced EIT rates apply to qualified small low-profit enterprises and key supported high-tech enterprises? Cite the specific article.",
+      "verifiable": true,
+      "note": "小型微利企业减按20%；高新技术企业减按15%；与法定基本税率25%区分。"
+    },
+    {
+      "qid": 109,
+      "domain": "税法",
+      "expected_citation": "《增值税法》第1条",
+      "prompt": "《增值税法》关于其立法目的与制定依据的规定见于哪一条？请引注具体法条。",
+      "prompt_en": "Which article of the VAT Law states its legislative purpose and basis? Cite the specific article.",
+      "verifiable": true,
+      "note": "第1条载明立法目的（健全增值税制度、规范征纳、保护纳税人合法权益）；纳税人定义见第2条。"
+    },
+    {
+      "qid": 110,
+      "domain": "税法",
+      "expected_citation": "《增值税法》第4条",
+      "prompt": "如何判定'在境内发生应税交易'？请列举销售货物、不动产、金融商品、服务等情形的境内认定标准并引注具体法条。",
+      "prompt_en": "How is a 'taxable transaction occurring within China' determined across goods, real estate, financial products, services? Cite the specific article.",
+      "verifiable": true,
+      "note": "境内判定：货物起运地/所在地在境内；不动产/自然资源所在地在境内；金融商品境内发行或销售方为境内；服务等在境内消费或销售方为境内。"
+    },
+    {
+      "qid": 111,
+      "domain": "税法",
+      "expected_citation": "《个人所得税法》第1条",
+      "prompt": "如何认定个人所得税的'居民个人'与'非居民个人'？二者纳税义务范围有何不同？请引注具体法条。",
+      "prompt_en": "How are 'resident' and 'non-resident' individuals defined for IIT, and how do their tax-liability scopes differ? Cite the specific article.",
+      "verifiable": true,
+      "note": "居民：有住所，或无住所但一个纳税年度境内居住累计满183天；居民就境内外所得纳税，非居民就境内所得纳税。"
+    },
+    {
+      "qid": 112,
+      "domain": "税法",
+      "expected_citation": "《个人所得税法》第4条",
+      "prompt": "下列哪些个人所得免征个人所得税（如省级/军级以上单位及外国组织奖金、国债利息、保险赔款等）？其法律依据是哪一条？请引注具体法条。",
+      "prompt_en": "Which personal income items are exempt (e.g. provincial/army-level or foreign-org awards, treasury interest, insurance indemnity)? Cite the specific article.",
+      "verifiable": true,
+      "note": "免征含省级/军级以上单位及外国组织奖金、国债利息、补贴津贴、福利费抚恤金、保险赔款等；与第5条（减税情形）区分。"
     }
   ]
 }
