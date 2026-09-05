@@ -81,6 +81,8 @@ Legal AI Watch 用一套**可验证引注核验引擎**来回答这个问题，�
 
 本仓库的**实际评测与看板生成完全不依赖 submodule**：题库来自本仓库自带的 [`config/questions.json`](config/questions.json)，核验引擎 [`scripts/verifier.py`](scripts/verifier.py) 为本仓库自带的官方方法学实现。`legal-hallucination-bench` 是**开源仓库（license: MIT）**，仅作为**可选的题库上游源**被 [`scripts/sync_questions.py`](scripts/sync_questions.py) 引用（用于把上游最新题库同步进本仓库）；未拉取时（如离线）演示与评测照常可跑。
 
+> 📦 **作品集联动**：本仓库是 [vickywu97 AI 法律作品集](https://github.com/vickywu97/vickywu97-profile) 的「公开榜单」环节；地基评测 [legal-hallucination-bench](https://github.com/vickywu97/legal-hallucination-bench) 与产品 [compliance-triangle](https://github.com/vickywu97/compliance-triangle) 同属该作品集。
+
 ---
 
 ## 🚀 本地运行（无需 API Key 也能看 Dashboard）
