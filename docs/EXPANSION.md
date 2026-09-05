@@ -1,18 +1,25 @@
 # 扩题工作流（Benchmark Expansion Playbook）
 
-`legal-ai-watch` 的公开榜单当前 39 题。本文件记录把题库安全扩到百级的**纪律**，
+`legal-ai-watch` 的公开榜单当前 88 题。本文件记录把题库安全扩到百级的**纪律**，
 核心是：题目引注必须全部落在 `config/article_texts.json` 的**已核验**条文全文上，
 绝不凭记忆撰写法条，也不把未核验文字当真值。
 
-## 状态（2026-09-04）
+## 状态（2026-09-05）
 
-- 参考库 `article_texts.json`：**82 条、_uncovered=0**。其中 61 条为历史（38 条来自
+- 参考库 `article_texts.json`：**104 条、_uncovered=0**。其中 61 条为历史（38 条来自
   legal-hallucination-bench 已核验 KB + 22 条来自用户提供的官方 .doc 原文）；
   **新增 21 条**来自 legal-hallucination-bench 已核验 KB
   （`knowledge_base/laws/statutes.jsonl`，2327 节点全 verified），经
-  `scripts/build_article_texts.py --merge-pending` 合并（status=VERIFIED，KB 已律师核验）。
-- 候选题目草稿：`config/questions_candidates.draft.json`（**25 道，Q40–Q64，
-  `_STATUS=CANDIDATE_UNVERIFIED`**）。待律师逐题核验后并入 `questions.json`。
+  `scripts/build_article_texts.py --merge-pending` 合并（status=VERIFIED，KB 已律师核验）；
+  **第二批再补 22 条**（税收征管法 #15/#25/#32/#45、企业所得税法 #7/#9/#18/#41、民法典
+  #147/#157/#533/#585、刑法 #67/#72/#382/#385、公司法 #27/#59/#189、专利法 #19/#47、
+  增值税法 #3/#10、个人所得税法 #6），使税收征管法、企业所得税法两法自此零覆盖转为已覆盖。
+- 真值库 `questions.json`：**88 题（Q1–Q88）**，全部预期引注均命中上述已核验条文。
+- 候选题目草稿：`config/questions_candidates.draft.json`（**49 道，Q40–Q88，
+  `_STATUS=CANDIDATE_UNVERIFIED`**）为**冻结审计记录**，并入真值库后保留不删（受
+  `test_coverage.py` 约束）；当前 49 道已全部并入真值库，参考库 104 条已被全部用完
+  （可用锚点 0，理论可扩至约 88 道 = 当前题量上限）。进一步扩题须先从 LHB 已核验 KB
+  拉取新法条扩充 `article_texts.json`。
 
 ## 步骤
 
@@ -54,3 +61,6 @@ python3 scripts/coverage_report.py    # 确认新题引注全部命中
   严禁 AI 凭记忆撰写。
 - 合并进 `article_texts.json` 的条目必须 `status=VERIFIED` 且正文非空；未核验条目
   被 `--merge-pending` 安全闸跳过。
+- `questions_candidates.draft.json` 为**冻结审计记录**：题目并入真值库后**不得清空、
+  不得改写 `_STATUS`**，`test_coverage.py` 以 `_STATUS==CANDIDATE_UNVERIFIED` 且
+  `candidates` 非空为不变量。历史草稿（含已并入者）保留备查，不与真值库同步删除。
