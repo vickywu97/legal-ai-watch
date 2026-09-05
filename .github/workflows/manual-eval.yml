@@ -111,7 +111,7 @@ jobs:
           SCOPE="${{ github.event.inputs.scope }}"
           [ -z "$SCOPE" ] && SCOPE=full
           if [ "$SCOPE" = "smoke" ]; then LIMIT=5; else LIMIT=0; fi
-          python scripts/run_eval.py --date "$EVAL_DATE" --output data/ --samples "$SAMPLES" --limit "$LIMIT"
+          python scripts/run_eval.py --date "$EVAL_DATE" --output data/ --samples "$SAMPLES" --limit "$LIMIT" --check-faithfulness
 
       - name: Ensure deployable data/ (fallback if eval failed)
         if: ${{ github.event.inputs.scope != 'smoke' }}
