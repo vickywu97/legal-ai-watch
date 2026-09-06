@@ -118,6 +118,73 @@ def build_answers(latest_dir: Path | None):
     return out
 
 
+def find_answers_dir_for_date(data_root: Path, date_str: str) -> Path | None:
+    d = data_root / "answers" / date_str
+    return d if d.is_dir() else None
+
+
+def _load_verif_map(vpath: Path) -> dict:
+    """Return {(qid, model): {status, domain, question}}."""
+    out: dict = {}
+    if not vpath.exists():
+        return out
+    with open(vpath, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            r = json.loads(line)
+            out[(r["qid"], r["model"])] = {
+                "status": r.get("status", "?"),
+                "domain": r.get("domain", ""),
+                "question": r.get("question", ""),
+            }
+    return out
+
+
+# Status severity ordering for classifying a flip as improvement vs regression.
+_SEVERITY = {"✓": 0, "✗F": 1, "✗T": 2, "✗NF": 3, "✗MA": 3, "✗ERR": 2, "?": 1, "·": 1}
+
+
+def build_regression(latest_dir: Path | None, prev_dir: Path | None):
+    """Compare two eval runs at the per-(question, model) level and report status
+    flips. This is the question-level regression view (distinct from the
+    model-level HVI delta shown in the '与上期对比' panel).
+    """
+    if latest_dir is None or prev_dir is None or latest_dir == prev_dir:
+        return None
+    cur = _load_verif_map(latest_dir / "verifications.jsonl")
+    prev = _load_verif_map(prev_dir / "verifications.jsonl")
+    flips = []
+    for key in sorted(set(cur) & set(prev), key=lambda k: (k[1], k[0])):
+        qid, model = key
+        s_cur, s_prev = cur[key]["status"], prev[key]["status"]
+        if s_cur == s_prev:
+            continue
+        sev_cur, sev_prev = _SEVERITY.get(s_cur, 1), _SEVERITY.get(s_prev, 1)
+        if sev_cur < sev_prev:
+            kind = "改善"
+        elif sev_cur > sev_prev:
+            kind = "退化"
+        else:
+            kind = "类型变化"
+        flips.append({
+            "qid": qid, "model": model, "domain": cur[key]["domain"],
+            "question": cur[key]["question"],
+            "before": s_prev, "after": s_cur, "kind": kind,
+        })
+    # Summary counts
+    summary = {"改善": 0, "退化": 0, "类型变化": 0}
+    for f in flips:
+        summary[f["kind"]] += 1
+    return {
+        "prev_date": prev_dir.name,
+        "latest_date": latest_dir.name,
+        "flips": flips,
+        "summary": summary,
+    }
+
+
 def generate(data_root: Path, out_dir: Path, stale: bool = False):
     history = load_json(data_root / "leaderboard_history.json") or {
         "updated_at": date_cls.today().isoformat(), "models": [], "domains": [], "history": []}
@@ -127,6 +194,14 @@ def generate(data_root: Path, out_dir: Path, stale: bool = False):
     latest_dir = find_latest_answers_dir(data_root, history)
     questions, matrix_models, matrix = build_matrix(latest_dir)
     answers = build_answers(latest_dir)
+
+    # Previous eval dir (for the question-level regression view): the second-to-last
+    # eval date in history, if its answers dir exists on disk.
+    prev_dir = None
+    eval_dates = [h.get("date") for h in history.get("history", []) if h.get("date")]
+    if len(eval_dates) >= 2:
+        prev_dir = find_answers_dir_for_date(data_root, eval_dates[-2])
+    regression = build_regression(latest_dir, prev_dir)
 
     models = list(history.get("models", []))
     for m in matrix_models:
@@ -147,6 +222,7 @@ def generate(data_root: Path, out_dir: Path, stale: bool = False):
             "data": matrix,
             "date": latest_dir.name if latest_dir else None,
         },
+        "regression": regression,
         "answers": answers,
     }
 
@@ -257,8 +333,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   </section>
 
   <section class="panel">
-    <h2>分领域引注幻觉率 <span class="sub">(最新一期)</span></h2>
+    <h2>分领域引注幻觉率 <span class="sub">(最新一期 · 柱状)</span></h2>
     <div class="chart-box"><canvas id="domain-chart"></canvas></div>
+  </section>
+
+  <section class="panel">
+    <h2>分领域 HVI 热力图 <span class="sub">(法域 × 模型，颜色越红幻觉率越高)</span></h2>
+    <div id="heatmap" class="heatmap"></div>
+    <p class="note">单元格为该模型在该法域的引注幻觉率(HVI)；🟢≤15% / 🟡≤35% / 🟠≤55% / 🔴>55%。横向对比可定位某模型在特定法域的系统性薄弱点。</p>
+  </section>
+
+  <section class="panel">
+    <h2>逐题回归分析 <span class="sub" id="regression-sub"></span></h2>
+    <div id="regression-view" class="regression-view"></div>
   </section>
 
   <section class="panel">
@@ -383,6 +470,32 @@ table.matrix thead th{background:#f8fafc;position:sticky;top:0}
 
 .site-footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-size:13px}
 .site-footer .copy{margin-top:6px;font-size:12px}
+
+/* ---- domain HVI heatmap ---- */
+.heatmap{overflow-x:auto}
+table.hm{border-collapse:collapse;font-size:13px;margin:0}
+table.hm th,table.hm td{border:1px solid var(--line);padding:7px 10px;text-align:center}
+table.hm .hm-corner{background:#f8fafc;font-size:12px;color:var(--muted);font-weight:600;text-align:left;white-space:nowrap}
+table.hm .hm-row{background:#f8fafc;text-align:left;font-weight:500;white-space:nowrap;color:var(--ink)}
+table.hm .hm-cell{font-weight:700;font-variant-numeric:tabular-nums;min-width:54px}
+
+/* ---- question-level regression ---- */
+.regression-view{display:flex;flex-direction:column;gap:10px}
+.reg-summary{display:flex;gap:18px;font-size:14px;font-weight:600}
+.reg-good{color:var(--ok)} .reg-bad{color:var(--bad)} .reg-warn{color:#b45309}
+.reg-list{display:flex;flex-direction:column;gap:6px}
+.reg-row{display:grid;grid-template-columns:64px 110px 150px 96px 1fr;gap:10px;align-items:center;
+  font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.reg-row.reg-bad{border-left:4px solid var(--bad)}
+.reg-row.reg-good{border-left:4px solid var(--ok)}
+.reg-row.reg-warn{border-left:4px solid #b45309}
+.reg-kind{font-weight:700}
+.reg-flip{font-weight:700;font-variant-numeric:tabular-nums}
+.reg-qtext{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:720px){
+  .reg-row{grid-template-columns:54px 90px 1fr;grid-auto-rows:auto}
+  .reg-flip{grid-column:1 / -1}
+}
 
 @media(max-width:860px){
   .cards{grid-template-columns:repeat(2,1fr)}
@@ -540,6 +653,70 @@ JS = """
         plugins:{legend:{position:"bottom"}, tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.y}%`}}},
         scales:{y:{title:{display:true,text:"HVI (%)"}, ticks:{callback:v=>v+"%"}}}}
     });
+  }
+
+  // ---- domain HVI heatmap (color matrix: domain × model) ----
+  const heatEl = document.getElementById("heatmap");
+  if (heatEl && latest) {
+    const dh = latest.domain_hvi || {};
+    const doms = DOMAINS.length ? DOMAINS
+      : (Object.values(dh)[0] ? Object.keys(Object.values(dh)[0]) : []);
+    if (doms.length && MODELS.length) {
+      let html = '<table class="hm"><thead><tr><th class="hm-corner">法域 \\ 模型</th>';
+      MODELS.forEach(m => html += `<th>${m}</th>`);
+      html += "</tr></thead><tbody>";
+      doms.forEach(dom => {
+        html += `<tr><th class="hm-row">${dom}</th>`;
+        MODELS.forEach(m => {
+          const v = (dh[m] && dh[m][dom] != null) ? dh[m][dom] : null;
+          const p = v == null ? "—" : (v * 100).toFixed(0) + "%";
+          const bg = v == null ? "#eef2f7"
+            : v <= 0.15 ? "#16a34a" : v <= 0.35 ? "#d97706"
+            : v <= 0.55 ? "#ea580c" : "#dc2626";
+          const fg = (v != null && v > 0.35) ? "#fff" : "#1f2933";
+          html += `<td class="hm-cell" style="background:${bg};color:${fg}">${p}</td>`;
+        });
+        html += "</tr>";
+      });
+      html += "</tbody></table>";
+      heatEl.innerHTML = html;
+    } else {
+      heatEl.innerHTML = '<p style="color:#647488">无分领域数据。</p>';
+    }
+  }
+
+  // ---- question-level regression (status flips across two runs) ----
+  const regEl = document.getElementById("regression-view");
+  const regSub = document.getElementById("regression-sub");
+  const REG = W.regression;
+  if (regEl && REG) {
+    regSub.textContent = `( ${REG.prev_date} → ${REG.latest_date} )`;
+    const s = REG.summary || {};
+    const total = (s["改善"] || 0) + (s["退化"] || 0) + (s["类型变化"] || 0);
+    if (!total) {
+      regEl.innerHTML = '<p style="color:#647488">两期之间未检测到题目级状态变化（模型表现稳定）。</p>';
+    } else {
+      const clsMap = {改善: "reg-good", 退化: "reg-bad", 类型变化: "reg-warn"};
+      let html = `<div class="reg-summary">
+        <span class="reg-good">▲ 改善 ${s["改善"] || 0}</span>
+        <span class="reg-bad">▼ 退化 ${s["退化"] || 0}</span>
+        <span class="reg-warn">◆ 类型变化 ${s["类型变化"] || 0}</span>
+      </div>`;
+      html += '<div class="reg-list">';
+      REG.flips.forEach(f => {
+        html += `<div class="reg-row ${clsMap[f.kind]}">
+          <span class="reg-kind">${f.kind}</span>
+          <span class="reg-model">${f.model}</span>
+          <span class="reg-q">Q${f.qid} · ${f.domain}</span>
+          <span class="reg-flip">${f.before} → ${f.after}</span>
+          <span class="reg-qtext">${f.question}</span>
+        </div>`;
+      });
+      html += "</div>";
+      regEl.innerHTML = html;
+    }
+  } else if (regEl) {
+    regEl.innerHTML = '<p style="color:#647488">需至少两期逐题核验数据方可做题目级回归分析。</p>';
   }
 
   // ---- matrix (with answer drill-down) ----

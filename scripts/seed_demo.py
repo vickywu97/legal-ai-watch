@@ -86,13 +86,20 @@ def gen_history():
     return {"updated_at": END_DATE.isoformat(), "models": MODELS, "domains": domains, "history": history}
 
 
-def gen_latest_answers(history, questions):
-    random.seed(SEED + 1)
-    latest = history["history"][-1]
-    d = latest["date"]
+def _answer_seed_for(date_str: str) -> int:
+    # Stable, deterministic per-date seed so re-runs reproduce the same demo.
+    digits = "".join(ch if ch.isdigit() else "" for ch in date_str)
+    return (SEED + 1 + (int(digits) if digits else 0)) % (2 ** 31)
+
+
+def gen_answers_for_date(entry, questions):
+    """Generate answers + verifications for ONE eval date (entry from history)."""
+    d = entry["date"]
     day_dir = DATA / "answers" / d
     day_dir.mkdir(parents=True, exist_ok=True)
+    latest = entry
     model_hvi = {r["model"]: r["hvi"] for r in latest["leaderboard"]}
+    random.seed(_answer_seed_for(d))
 
     answers = []
     verifications = []
@@ -131,6 +138,15 @@ def gen_latest_answers(history, questions):
     (day_dir / "verifications.jsonl").write_text(
         "\n".join(json.dumps(r, ensure_ascii=False) for r in verifications) + "\n", encoding="utf-8")
     return d
+
+
+def gen_latest_answers(history, questions):
+    """Write the most recent N eval dates so the dashboard's regression view
+    (per-question status flips across runs) has data to compare."""
+    N = 2
+    recent = history["history"][-N:]
+    written = [gen_answers_for_date(e, questions) for e in recent]
+    return written[-1]  # latest date (used by find_latest_answers_dir)
 
 
 def expect_dom_lead(dom):
