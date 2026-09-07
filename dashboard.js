@@ -23,8 +23,10 @@
     if (st === "✓") return "ok";
     if (st === "✗ERR") return "err";
     if (st === "✗T") return "temporal";
+    if (st === "✗NF") return "bad"; // 引注法条不存在
+    if (st === "✗F") return "warn"; // 内容不忠实
     if (["?","·"].includes(st)) return st === "·" ? "na" : "unk";
-    return "bad"; // ✗MA / ✗T
+    return "bad"; // ✗MA
   }
 
   // ---- header / freshness ----
@@ -79,6 +81,7 @@
         <td class="num">${num(r.integrity!=null?pct(r.integrity):null)}</td>
         <td class="num">${num(r.temporal!=null?pct(r.temporal):null)}</td>
         <td class="num">${r.api_errors||0}</td>
+        <td class="num">${num(r.content_fidelity!=null?pct(r.content_fidelity):null)}</td>
         <td>${mv}</td>
       </tr>`;
     }).join("");
@@ -145,6 +148,70 @@
         plugins:{legend:{position:"bottom"}, tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.y}%`}}},
         scales:{y:{title:{display:true,text:"HVI (%)"}, ticks:{callback:v=>v+"%"}}}}
     });
+  }
+
+  // ---- domain HVI heatmap (color matrix: domain × model) ----
+  const heatEl = document.getElementById("heatmap");
+  if (heatEl && latest) {
+    const dh = latest.domain_hvi || {};
+    const doms = DOMAINS.length ? DOMAINS
+      : (Object.values(dh)[0] ? Object.keys(Object.values(dh)[0]) : []);
+    if (doms.length && MODELS.length) {
+      let html = '<table class="hm"><thead><tr><th class="hm-corner">法域 \ 模型</th>';
+      MODELS.forEach(m => html += `<th>${m}</th>`);
+      html += "</tr></thead><tbody>";
+      doms.forEach(dom => {
+        html += `<tr><th class="hm-row">${dom}</th>`;
+        MODELS.forEach(m => {
+          const v = (dh[m] && dh[m][dom] != null) ? dh[m][dom] : null;
+          const p = v == null ? "—" : (v * 100).toFixed(0) + "%";
+          const bg = v == null ? "#eef2f7"
+            : v <= 0.15 ? "#16a34a" : v <= 0.35 ? "#d97706"
+            : v <= 0.55 ? "#ea580c" : "#dc2626";
+          const fg = (v != null && v > 0.35) ? "#fff" : "#1f2933";
+          html += `<td class="hm-cell" style="background:${bg};color:${fg}">${p}</td>`;
+        });
+        html += "</tr>";
+      });
+      html += "</tbody></table>";
+      heatEl.innerHTML = html;
+    } else {
+      heatEl.innerHTML = '<p style="color:#647488">无分领域数据。</p>';
+    }
+  }
+
+  // ---- question-level regression (status flips across two runs) ----
+  const regEl = document.getElementById("regression-view");
+  const regSub = document.getElementById("regression-sub");
+  const REG = W.regression;
+  if (regEl && REG) {
+    regSub.textContent = `( ${REG.prev_date} → ${REG.latest_date} )`;
+    const s = REG.summary || {};
+    const total = (s["改善"] || 0) + (s["退化"] || 0) + (s["类型变化"] || 0);
+    if (!total) {
+      regEl.innerHTML = '<p style="color:#647488">两期之间未检测到题目级状态变化（模型表现稳定）。</p>';
+    } else {
+      const clsMap = {改善: "reg-good", 退化: "reg-bad", 类型变化: "reg-warn"};
+      let html = `<div class="reg-summary">
+        <span class="reg-good">▲ 改善 ${s["改善"] || 0}</span>
+        <span class="reg-bad">▼ 退化 ${s["退化"] || 0}</span>
+        <span class="reg-warn">◆ 类型变化 ${s["类型变化"] || 0}</span>
+      </div>`;
+      html += '<div class="reg-list">';
+      REG.flips.forEach(f => {
+        html += `<div class="reg-row ${clsMap[f.kind]}">
+          <span class="reg-kind">${f.kind}</span>
+          <span class="reg-model">${f.model}</span>
+          <span class="reg-q">Q${f.qid} · ${f.domain}</span>
+          <span class="reg-flip">${f.before} → ${f.after}</span>
+          <span class="reg-qtext">${f.question}</span>
+        </div>`;
+      });
+      html += "</div>";
+      regEl.innerHTML = html;
+    }
+  } else if (regEl) {
+    regEl.innerHTML = '<p style="color:#647488">需至少两期逐题核验数据方可做题目级回归分析。</p>';
   }
 
   // ---- matrix (with answer drill-down) ----
