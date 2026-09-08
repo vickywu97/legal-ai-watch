@@ -420,3 +420,146 @@ def verify(question: dict, answer: str, eq: Equivalence, faithfulness=None) -> d
     return {"status": "✗MA",
             "detail": f"引注与预期不符 (期望 {expected}, 实际 {citations[0]})",
             "citations": citations}
+
+
+# ----------------------------------------------------------------------------
+# Answer-level hallucination detectors (v1.3: 编造判例 / 循环引注 / 自相矛盾)
+# ----------------------------------------------------------------------------
+# These mirror the semantics of bench/answer_checks.py but run on watch's OWN
+# extracted citations + answer text. watch's verifier is intentionally
+# self-contained (docs/METHODOLOGY.md §7: "核验质量=产品本身"), so the same
+# answer-level logic lives here rather than as a submodule import. Every
+# detector attaches an `answer_flags` dict to each verification and NEVER
+# changes HVI — the citation-level status remains the single source of truth
+# for the leaderboard's hallucination rate.
+GUIDING_CASE_RE = re.compile(r"指导?性?案例\s*第?\s*(\d+)\s*号")
+_GUIDING_CASES: "set|None" = None
+
+
+def load_guiding_cases(path: "Path|None" = None) -> set:
+    """Load the verified guiding-case registry as a set of ints (guide_no).
+
+    Mirrors bench/knowledge_base/cases.json (kept in sync by hand; the two
+    registries are the same curated set). Returns an empty set if the file is
+    absent so the detector degrades to "everything is fabricated" only when
+    misconfigured — callers should ensure the registry exists.
+    """
+    global _GUIDING_CASES
+    if _GUIDING_CASES is not None:
+        return _GUIDING_CASES
+    p = path or (Path(__file__).resolve().parent.parent / "config" / "guiding_cases.json")
+    if not Path(p).exists():
+        _GUIDING_CASES = set()
+        return _GUIDING_CASES
+    with open(p, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    _GUIDING_CASES = {int(c["guide_no"]) for c in data.get("cases", [])}
+    return _GUIDING_CASES
+
+
+def extract_guiding_cases(text: str) -> list:
+    return [int(m.group(1)) for m in GUIDING_CASE_RE.finditer(text or "")]
+
+
+def detect_fabricated_case(answer: str, registry: set | None = None):
+    """Return (is_fabricated, [fabricated_numbers], [all_cited_numbers]).
+
+    A guiding case (指导案例第N号) is a real-world factual claim; we verify it
+    against the curated registry. A cited number outside the registry is a
+    HARD fabricated-case hallucination (the benchmark's "guiding-case HR").
+    """
+    if registry is None:
+        registry = load_guiding_cases()
+    found = extract_guiding_cases(answer)
+    fabricated = [n for n in found if n not in registry]
+    return bool(fabricated), fabricated, found
+
+
+_CIRC_REF_RE = re.compile(r"第\s*([0-9零一二三四五六七八九十百千]+)\s*条")
+
+
+def detect_circular_citation(answer: str):
+    """Return (is_circular, [all_provision_numbers]).
+
+    Heuristic: detect a provision cycle referenced within the answer's OWN
+    reasoning — e.g. "依据第15条，而第15条又引第16条，第16条复引第15条". Real
+    statutes form a DAG, so a self-referential cycle is pathological. This is an
+    EXPERIMENTAL answer-level signal (documented as such); it targets the
+    reasoning trap, not a KB graph, so it stays self-contained.
+    """
+    nums = [cn_to_int(m.group(1)) for m in _CIRC_REF_RE.finditer(answer or "")]
+    seen: dict = {}
+    for i, n in enumerate(nums):
+        if n in seen and (i - seen[n] > 1):
+            return True, nums
+        seen[n] = i
+    if re.search(r"(互为援引|循环引用|循环引注|互相引用|相互引用)", answer or ""):
+        return True, nums
+    return False, nums
+
+
+# Self-contradiction (diagnostic ONLY — never a hallucination verdict).
+# Ordered list of (positive, negative) predicate pairs (NOT a dict: dict would
+# collapse duplicate keys like "应当" which legitimately maps to BOTH "无需" and
+# "不得").
+_OPP = [
+    ("有效", "无效"), ("无效", "有效"),
+    ("成立", "不成立"), ("不成立", "成立"),
+    ("属于", "不属于"), ("不属于", "属于"),
+    ("承担", "不承担"), ("不承担", "承担"),
+    ("应当", "无需"), ("必须", "无需"),
+    ("应当", "不得"), ("必须", "不得"),
+]
+_CLAUSE_SPLIT = re.compile(r"[。；;！？\n]")
+
+
+def _shared_head(a: str, b: str) -> bool:
+    """Crude shared 'head' check: any >=3-char Chinese substring common to both
+    clauses (a real shared subject). Good enough for a diagnostic flag."""
+    for n in range(3, min(len(a), len(b)) + 1):
+        for s in range(0, len(a) - n + 1):
+            sub = a[s:s + n]
+            if sub in b and re.search(r"[一-鿿]", sub):
+                return True
+    return False
+
+
+def _clause_pair_contradicts(a: str, b: str) -> bool:
+    for pos, neg in _OPP:
+        if pos in a and neg in b and _shared_head(a, b):
+            return True
+        if neg in a and pos in b and _shared_head(a, b):
+            return True
+    return False
+
+
+def detect_self_contradiction(text: str) -> bool:
+    """Heuristic self-contradiction flag (DIAGNOSTIC ONLY, not scored).
+
+    Flags when the same legal head is asserted with opposing predicates across
+    clauses, or an explicit reversal negates an earlier claim about the same
+    head without resolution. Returns True as a soft signal requiring expert
+    confirmation — the pipeline treats it as such and never penalizes HVI.
+    """
+    if not text:
+        return False
+    clauses = [c.strip() for c in _CLAUSE_SPLIT.split(text) if c.strip()]
+    for i in range(len(clauses)):
+        for j in range(i + 1, len(clauses)):
+            if _clause_pair_contradicts(clauses[i], clauses[j]):
+                return True
+    return False
+
+
+def answer_level_flags(answer: str, registry: set | None = None) -> dict:
+    """Compute all three answer-level flags for one answer (cheap, offline)."""
+    fab, fab_list, cited = detect_fabricated_case(answer, registry)
+    circ, _ = detect_circular_citation(answer)
+    sc = detect_self_contradiction(answer)
+    return {
+        "fabricated_case": fab,
+        "fabricated_cases": fab_list,
+        "cited_guiding_case": bool(cited),
+        "circular": circ,
+        "self_contradiction": sc,
+    }

@@ -127,10 +127,25 @@ def gen_answers_for_date(entry, questions):
                     status = "✗T"
                     detail = f"援引已废止/旧版本法条（期望现行法 {expected}）"
                     answer = f"根据{expected}（已废止旧版）的规定，{q['prompt'][:18]}……"
+            # v1.3 answer-level demo signal: deterministically inject a
+            # fabricated guiding case into a small slice of DeepSeek-R1's
+            # hallucinated answers so the public board's dimension-coverage
+            # report (hr_case) has visible data. Purely a demo artifact.
+            ans_flags = {"fabricated_case": False, "fabricated_cases": [],
+                         "cited_guiding_case": False, "circular": False,
+                         "self_contradiction": False}
+            if (m == "DeepSeek-R1" and status != "✓"
+                    and random.random() < 0.10):
+                answer = answer + " 另可参见指导案例第999号佐证。"
+                ans_flags["fabricated_case"] = True
+                ans_flags["fabricated_cases"] = [999]
+                ans_flags["cited_guiding_case"] = True
+
             answers.append({"model": m, "qid": q["qid"], "answer": answer})
             verifications.append({
                 "qid": q["qid"], "domain": dom, "question": q["prompt"],
                 "model": m, "status": status, "detail": detail,
+                "answer_flags": ans_flags,
                 "citations": [expected] if status == "✓" else [fake_citation(expected) if status == "✗MA" else expected],
             })
     (day_dir / "answers.jsonl").write_text(

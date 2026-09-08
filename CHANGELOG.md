@@ -10,6 +10,19 @@ Each line follows: `YYYY-MM-DD · <scope> · <summary>`
 
 ---
 
+## 2026-09-07 · dimensions · v1.3 答案级幻觉维度接入公开榜单（维度覆盖报告）
+
+- **新增 3 个答案级幻觉维度**（在 `scripts/verifier.py` 内原生实现，watch 核验引擎自洽，不复用 submodule 导入）：
+  - **编造判例 (hr_case)**：答案中出现的「指导案例第N号」若不在 `config/guiding_cases.json` 已核验基准（与 bench v1.3 `cases.json` 同步的 4 例）→ 硬幻觉；`hr_case` = 命名了虚构指导案例的回答 / 引用了指导案例的回答。
+  - **循环引注 (rate_circular)**：检测答案自身推理中对法条的循环援引（如「第15条引第16条、第16条复引第15条」）→ **实验性诊断信号**。
+  - **自相矛盾 (flag_self_contradiction)**：同一法律主体被相反谓词断言（如「应当先付」vs「无需先付」）→ **实验性诊断信号，仅标记待专家确认，绝不计入 HVI**。
+- **接入公开榜单**：`run_eval.py` 的 `build_leaderboard` 新增 `hr_case` / `rate_circular` / `flag_self_contradiction` 三列；`generate_dashboard.py` 排行榜表格追加 3 列 + 新增「维度覆盖矩阵」面板（模型 × 9 个幻觉维度的并排对照，绿=好/红=差）。答案级维度从不改变 HVI（HVI 仍以条文级 status 为唯一真值）。
+- **演示数据**：`seed_demo.py` 为 DeepSeek-R1 约 10% 幻觉答案确定性注入「指导案例第999号」虚构判例，使看板维度覆盖报告有可见数据（演示用，不代表真实表现）。
+- **测试**：`tests/test_answer_dimensions.py`（13 用例）——registry 加载、编造判例命中/未命中、循环引注闭环/正常、自相矛盾、flags 集成、verify_answer 挂载 answer_flags 且不污染 status、build_leaderboard 三维度聚合数学。全量 pytest 通过。
+- 诚实口径：`rate_circular` / `flag_self_contradiction` 为低精度实验性诊断信号，看板已明确标注「不计入 HVI、待专家确认」；`hr_case` 为高精度硬幻觉指标。
+
+---
+
 ## 2026-09-01 · eval-domain · 评测域拓宽（模型轴 × 题型轴双轴）
 
 - **模型轴：评测池 4 → 10 卡槽**。`config/models.json` 在原有 DeepSeek-R1 / Qwen-Max / GLM-4（在榜）+ Kimi-K2（限流暂停）基础上，预置 6 个国产模型卡槽并默认 `enabled:false`：**文心一言 ERNIE-4.5（百度千帆）、腾讯混元 Hunyuan-Turbo、豆包 Doubao-Pro（字节火山方舟）、阶跃 Step-2、MiniMax ABAB、百川 Baichuan4**。调用层为纯 OpenAI 兼容泛型（只 POST `api_base` + Bearer），故新增模型零代码改动，填对应 `api_key_env` Secret 并置 `enabled:true` 即自动并入评测池与排行榜。

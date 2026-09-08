@@ -45,6 +45,7 @@ from pathlib import Path
 from verifier import (
     Equivalence,
     HALLUCINATION_STATUSES,
+    answer_level_flags,
     extract_citations,
     verify as verify_fn,
 )
@@ -172,8 +173,16 @@ def call_model(model_cfg: dict, prompt: str, api_key: str, system_prompt: str,
 def verify_answer(question: dict, answer: str, eq: Equivalence, faithfulness=None) -> dict:
     """Verify a single answer. The local deterministic verifier IS the official
     methodology (docs/METHODOLOGY.md §7). `faithfulness` (optional) enables the
-    ✗F content-faithfulness layer; None keeps the deterministic baseline."""
-    return verify_fn(question, answer, eq, faithfulness=faithfulness)
+    ✗F content-faithfulness layer; None keeps the deterministic baseline.
+
+    In addition to the citation-level status (the single source of truth for
+    HVI), we attach `answer_flags` carrying the v1.3 answer-level dimensions
+    (编造判例 / 循环引注 / 自相矛盾). These never change HVI — they are
+    surfaced separately in the public board's dimension-coverage report.
+    """
+    v = verify_fn(question, answer, eq, faithfulness=faithfulness)
+    v["answer_flags"] = answer_level_flags(answer)
+    return v
 
 
 # ----------------------------------------------------------------------------
@@ -216,6 +225,13 @@ def aggregate_samples(model_id: str, question: dict, samples_results, n_samples:
     faithful_checked = sum(1 for _, v in samples_results if v.get("faithfulness_checked") is True)
     faithful_fail = counts.get("✗F", 0)
 
+    # v1.3 answer-level dimension tallies (never affect HVI).
+    af_all = [v.get("answer_flags") or {} for _, v in samples_results]
+    fabricated = sum(1 for af in af_all if af.get("fabricated_case"))
+    cited_gc = sum(1 for af in af_all if af.get("cited_guiding_case"))
+    circular = sum(1 for af in af_all if af.get("circular"))
+    self_contra = sum(1 for af in af_all if af.get("self_contradiction"))
+
     rep_answer = next((a for a, v in samples_results if v["status"] == majority), samples_results[0][0])
     rep_v = next((v for a, v in samples_results if v["status"] == majority), samples_results[0][1])
     rep_citations = rep_v.get("citations", [])
@@ -247,6 +263,10 @@ def aggregate_samples(model_id: str, question: dict, samples_results, n_samples:
         "_unverif": unverif,
         "_faithfulness_checked": faithful_checked,
         "_faithfulness_fail": faithful_fail,
+        "_fabricated_case": fabricated,
+        "_cited_guiding_case": cited_gc,
+        "_circular": circular,
+        "_self_contradiction": self_contra,
         "_counts": counts,
     }
 
@@ -260,6 +280,11 @@ def _augment_single_for_leaderboard(rec: dict):
     rec["_temporal"] = 1 if st == "✗T" else 0
     rec["_api_err"] = 1 if st == "✗ERR" else 0
     rec["_unverif"] = 1 if st == "?" else 0
+    af = rec.get("answer_flags") or {}
+    rec["_fabricated_case"] = 1 if af.get("fabricated_case") else 0
+    rec["_cited_guiding_case"] = 1 if af.get("cited_guiding_case") else 0
+    rec["_circular"] = 1 if af.get("circular") else 0
+    rec["_self_contradiction"] = 1 if af.get("self_contradiction") else 0
     rec["_counts"] = {st: 1}
 
 
@@ -466,6 +491,21 @@ def build_leaderboard(model_results: dict) -> list[dict]:
         content_fidelity = round((faithful_checked - faithful_fail) / faithful_checked, 4) \
             if faithful_checked else None
 
+        # v1.3 answer-level dimensions (never affect HVI).
+        # hr_case: of the answers that name a guiding case, the fraction naming
+        #   a FABRICATED one. None when no guiding case was cited.
+        fab_cases = sum(v.get("_fabricated_case", 0) for v in verifs)
+        cited_gc = sum(v.get("_cited_guiding_case", 0) for v in verifs)
+        hr_case = round(fab_cases / cited_gc, 4) if cited_gc else None
+        # rate_circular / flag_self_contradiction: fraction of all samples flagged
+        # (diagnostic signals; experimental, clearly labeled in the board).
+        total_samples = len(verifs)
+        rate_circular = round(sum(v.get("_circular", 0) for v in verifs) / total_samples, 4) \
+            if total_samples else None
+        flag_self_contradiction = round(
+            sum(v.get("_self_contradiction", 0) for v in verifs) / total_samples, 4) \
+            if total_samples else None
+
         cited_questions = sum(1 for v in verifs
                               if v["status"] in {"✓", "✗MA", "✗T"})
 
@@ -491,6 +531,9 @@ def build_leaderboard(model_results: dict) -> list[dict]:
             "citations": cited_questions,
             "api_errors": api_err,
             "content_fidelity": content_fidelity,
+            "hr_case": hr_case,
+            "rate_circular": rate_circular,
+            "flag_self_contradiction": flag_self_contradiction,
             "answered": len(verifs),
             "rank": rank,
         })

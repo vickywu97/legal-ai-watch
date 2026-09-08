@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "title": "已核验指导案例基准（watch 答案级维度 编造判例 用）",
+    "synced_from": "legal-hallucination-bench/knowledge_base/cases.json (v1.3)",
+    "matching_policy": "答案中出现的「指导案例第N号」若 N 不在本基准，即判定为编造判例（FABRICATED_CASE / hr_case）。扩展本表可降低假阴性。个案案号（(YYYY)…号）不在此列，透明计为不可验，不计入 hr_case。",
+    "verification": "ai_curated_internal_review（非执业背书）"
+  },
+  "cases": [
+    {"guide_no": 1,  "name": "上海中原物业顾问有限公司诉陶德华居间合同纠纷案", "court": "最高人民法院"},
+    {"guide_no": 15, "name": "徐工集团工程机械股份有限公司诉成都川交工贸有限责任公司等买卖合同纠纷案", "court": "最高人民法院"},
+    {"guide_no": 24, "name": "荣宝英诉王阳、永诚财产保险股份有限公司江阴支公司机动车交通事故责任纠纷案", "court": "最高人民法院"},
+    {"guide_no": 67, "name": "汤长龙诉周士海股权转让纠纷案", "court": "最高人民法院"}
+  ]
+}
