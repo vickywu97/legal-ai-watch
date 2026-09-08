@@ -300,8 +300,17 @@ def run_evaluation(eval_date: str, output_root: Path, demo: bool = False,
                    samples: int = 3, locale: str = "zh", limit: int = 0,
                    check_faithfulness: bool = False,
                    faithfulness_metric: str = "containment",
-                   faithfulness_threshold: float = 0.45):
+                   faithfulness_threshold: float = 0.45,
+                   only_models: list = None):
     models = load_json(CONFIG_DIR / "models.json")["models"]
+    if only_models:
+        wanted = set(only_models)
+        models = [m for m in models if m.get("id") in wanted]
+        if not models:
+            sys.exit(
+                f"[error] --models {only_models} matched NO model id in "
+                f"config/models.json. Check ids (e.g. deepseek-r1, qwen-max, "
+                f"glm-4) and that they are present (enabled or not).")
     questions = load_json(CONFIG_DIR / "questions.json")["questions"]
     eq = Equivalence.load(EQUIV_PATH)
     faithfulness = None
@@ -588,7 +597,14 @@ def main():
                          "cluster (>=0.538) and unfaithful cluster (<=0.387) leave a "
                          "clean gap, 0.45 sits inside it toward the unfaithful side). "
                          "See docs/XF_CONTENT_FAITHFULNESS_DESIGN.md.")
+    ap.add_argument("--models", default="",
+                    help="comma-separated model ids to evaluate (e.g. "
+                         "'DeepSeek-R1,Qwen-Max'). Empty = all enabled models in "
+                         "config/models.json. Must match ids exactly (case-sensitive); "
+                         "unknown ids are ignored.")
     args = ap.parse_args()
+
+    only_models = [m.strip() for m in args.models.split(",") if m.strip()] or None
 
     output_root = Path(args.output)
     output_root.mkdir(parents=True, exist_ok=True)
@@ -596,7 +612,8 @@ def main():
                    locale=args.locale, limit=args.limit,
                    check_faithfulness=args.check_faithfulness,
                    faithfulness_metric=args.faithfulness_metric,
-                   faithfulness_threshold=args.faithfulness_threshold)
+                   faithfulness_threshold=args.faithfulness_threshold,
+                   only_models=only_models)
 
 
 if __name__ == "__main__":
