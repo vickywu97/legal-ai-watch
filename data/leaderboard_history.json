@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-09-07",
+  "updated_at": "2026-09-14",
   "models": [
+    "DeepSeek-R1",
     "GLM-4",
-    "Qwen-Max",
-    "DeepSeek-R1"
+    "Qwen-Max"
   ],
   "domains": [
     "专利",
@@ -885,6 +885,88 @@
           "税法": 0.9048,
           "专利": 0.5238,
           "公司法": 0.6429,
+          "数据合规": 0.5,
+          "竞争法": 1.0
+        }
+      }
+    },
+    {
+      "date": "2026-09-14",
+      "leaderboard": [
+        {
+          "model": "DeepSeek-R1",
+          "hvi": 0.2174,
+          "crfi": 0.7826,
+          "coverage": 0.1749,
+          "integrity": 0.1369,
+          "temporal": 0.0,
+          "citations": 12,
+          "api_errors": 0,
+          "content_fidelity": 0.3303,
+          "hr_case": null,
+          "rate_circular": 0.1964,
+          "flag_self_contradiction": 0.0893,
+          "answered": 112,
+          "rank": 1
+        },
+        {
+          "model": "GLM-4",
+          "hvi": 0.5449,
+          "crfi": 0.4551,
+          "coverage": 0.9824,
+          "integrity": 0.4471,
+          "temporal": 0.0719,
+          "citations": 55,
+          "api_errors": 0,
+          "content_fidelity": 0.314,
+          "hr_case": null,
+          "rate_circular": 0.5446,
+          "flag_self_contradiction": 0.4911,
+          "answered": 112,
+          "rank": 2
+        },
+        {
+          "model": "Qwen-Max",
+          "hvi": 0.5849,
+          "crfi": 0.4151,
+          "coverage": 0.9815,
+          "integrity": 0.4074,
+          "temporal": 0.0881,
+          "citations": 52,
+          "api_errors": 0,
+          "content_fidelity": 0.275,
+          "hr_case": null,
+          "rate_circular": 0.2679,
+          "flag_self_contradiction": 0.4911,
+          "answered": 112,
+          "rank": 3
+        }
+      ],
+      "domain_hvi": {
+        "DeepSeek-R1": {
+          "民法": 0.0,
+          "刑法": 0.0,
+          "税法": 0.8571,
+          "专利": 0.0,
+          "公司法": 0.8,
+          "数据合规": null,
+          "竞争法": null
+        },
+        "Qwen-Max": {
+          "民法": 0.2,
+          "刑法": 0.0,
+          "税法": 0.875,
+          "专利": 0.5556,
+          "公司法": 0.6977,
+          "数据合规": 0.0,
+          "竞争法": 1.0
+        },
+        "GLM-4": {
+          "民法": 0.1765,
+          "刑法": 0.0,
+          "税法": 0.9,
+          "专利": 0.5455,
+          "公司法": 0.6512,
           "数据合规": 0.5,
           "竞争法": 1.0
         }

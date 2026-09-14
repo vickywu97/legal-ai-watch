@@ -72,7 +72,7 @@
       const hviCell = (r.hvi==null)
         ? `<span class="hvi-pill" style="background:#94a3b8">未作答</span>`
         : `<span class="hvi-pill" style="background:${hviColor(r.hvi)}">${pct(r.hvi)}</span>`;
-      return `<tr>
+        return `<tr>
         <td><span class="rank-badge">${rankCell}</span></td>
         <td><strong>${r.model}</strong></td>
         <td class="num">${hviCell}</td>
@@ -82,6 +82,9 @@
         <td class="num">${num(r.temporal!=null?pct(r.temporal):null)}</td>
         <td class="num">${r.api_errors||0}</td>
         <td class="num">${num(r.content_fidelity!=null?pct(r.content_fidelity):null)}</td>
+        <td class="num">${num(r.hr_case!=null?pct(r.hr_case):null)}</td>
+        <td class="num">${num(r.rate_circular!=null?pct(r.rate_circular):null)}</td>
+        <td class="num">${num(r.flag_self_contradiction!=null?pct(r.flag_self_contradiction):null)}</td>
         <td>${mv}</td>
       </tr>`;
     }).join("");
@@ -212,6 +215,54 @@
     }
   } else if (regEl) {
     regEl.innerHTML = '<p style="color:#647488">需至少两期逐题核验数据方可做题目级回归分析。</p>';
+  }
+
+  // ---- dimension coverage matrix (model × hallucination dimension) ----
+  const covEl = document.getElementById("coverage-matrix");
+  if (covEl && latest) {
+    // dim: [label, key, higherIsBetter]
+    const DIMS = [
+      ["HVI", "hvi", false],
+      ["CRFI", "crfi", true],
+      ["覆盖率", "coverage", true],
+      ["综合正确", "integrity", true],
+      ["时序幻觉", "temporal", false],
+      ["内容忠实", "content_fidelity", true],
+      ["编造判例(hr_case)", "hr_case", false],
+      ["循环引注", "rate_circular", false],
+      ["自相矛盾", "flag_self_contradiction", false],
+    ];
+    const rows = latest.leaderboard || [];
+    if (rows.length && MODELS.length) {
+      let html = '<table class="hm"><thead><tr><th class="hm-corner">维度 \ 模型</th>';
+      MODELS.forEach(m => html += `<th>${m}</th>`);
+      html += "</tr></thead><tbody>";
+      DIMS.forEach(([label, key, better]) => {
+        html += `<tr><th class="hm-row">${label}</th>`;
+        MODELS.forEach(m => {
+          const row = rows.find(r => r.model === m) || {};
+          const v = (key in row && row[key] != null) ? row[key] : null;
+          const p = v == null ? "—" : (v * 100).toFixed(0) + "%";
+          let bg, fg = "#1f2933";
+          if (v == null) {
+            bg = "#eef2f7";
+          } else {
+            // 0..1 -> severity; good dims invert the scale.
+            const bad = better ? (1 - v) : v;
+            bg = bad <= 0.15 ? "#16a34a"
+               : bad <= 0.35 ? "#d97706"
+               : bad <= 0.55 ? "#ea580c" : "#dc2626";
+            if (bad > 0.35) fg = "#fff";
+          }
+          html += `<td class="hm-cell" style="background:${bg};color:${fg}">${p}</td>`;
+        });
+        html += "</tr>";
+      });
+      html += "</tbody></table>";
+      covEl.innerHTML = html;
+    } else {
+      covEl.innerHTML = '<p style="color:#647488">无维度覆盖数据。</p>';
+    }
   }
 
   // ---- matrix (with answer drill-down) ----
