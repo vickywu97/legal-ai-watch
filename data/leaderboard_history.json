@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-05",
+  "updated_at": "2026-10-12",
   "models": [
     "GLM-4",
     "Qwen-Max",
@@ -1212,6 +1212,88 @@
           "刑法": 0.0,
           "税法": 0.9048,
           "专利": 0.52,
+          "公司法": 0.6429,
+          "数据合规": 0.5,
+          "竞争法": 1.0
+        }
+      }
+    },
+    {
+      "date": "2026-10-12",
+      "leaderboard": [
+        {
+          "model": "GLM-4",
+          "hvi": 0.5521,
+          "crfi": 0.4479,
+          "coverage": 0.9879,
+          "integrity": 0.4424,
+          "temporal": 0.0736,
+          "citations": 54,
+          "api_errors": 0,
+          "content_fidelity": 0.2992,
+          "hr_case": null,
+          "rate_circular": 0.5804,
+          "flag_self_contradiction": 0.5,
+          "answered": 112,
+          "rank": 1
+        },
+        {
+          "model": "Qwen-Max",
+          "hvi": 0.5613,
+          "crfi": 0.4387,
+          "coverage": 0.9688,
+          "integrity": 0.425,
+          "temporal": 0.0839,
+          "citations": 50,
+          "api_errors": 0,
+          "content_fidelity": 0.2787,
+          "hr_case": null,
+          "rate_circular": 0.1696,
+          "flag_self_contradiction": 0.4196,
+          "answered": 112,
+          "rank": 2
+        },
+        {
+          "model": "DeepSeek-R1",
+          "hvi": null,
+          "crfi": null,
+          "coverage": null,
+          "integrity": null,
+          "temporal": null,
+          "citations": 0,
+          "api_errors": 336,
+          "content_fidelity": null,
+          "hr_case": null,
+          "rate_circular": 0.0,
+          "flag_self_contradiction": 0.0,
+          "answered": 112,
+          "rank": null
+        }
+      ],
+      "domain_hvi": {
+        "DeepSeek-R1": {
+          "民法": null,
+          "刑法": null,
+          "税法": null,
+          "专利": null,
+          "公司法": null,
+          "数据合规": null,
+          "竞争法": null
+        },
+        "Qwen-Max": {
+          "民法": 0.1429,
+          "刑法": 0.0,
+          "税法": 0.9091,
+          "专利": 0.3889,
+          "公司法": 0.6818,
+          "数据合规": 0.6667,
+          "竞争法": 1.0
+        },
+        "GLM-4": {
+          "民法": 0.1818,
+          "刑法": 0.0,
+          "税法": 0.881,
+          "专利": 0.5789,
           "公司法": 0.6429,
           "数据合规": 0.5,
           "竞争法": 1.0
