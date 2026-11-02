@@ -1,19 +1,19 @@
 {
-  "date": "2026-10-26",
+  "date": "2026-11-02",
   "leaderboard": [
     {
       "model": "GLM-4",
-      "hvi": 0.5385,
-      "crfi": 0.4615,
-      "coverage": 0.9883,
+      "hvi": 0.5357,
+      "crfi": 0.4643,
+      "coverage": 0.9825,
       "integrity": 0.4561,
-      "temporal": 0.071,
-      "citations": 58,
+      "temporal": 0.0714,
+      "citations": 57,
       "api_errors": 0,
       "content_fidelity": 0.321,
       "hr_case": null,
-      "rate_circular": 0.5625,
-      "flag_self_contradiction": 0.4911,
+      "rate_circular": 0.5804,
+      "flag_self_contradiction": 0.4554,
       "answered": 112,
       "rank": 1
     },
@@ -70,12 +70,12 @@
       "竞争法": null
     },
     "GLM-4": {
-      "民法": 0.1667,
+      "民法": 0.2105,
       "刑法": 0.0,
-      "税法": 0.881,
-      "专利": 0.5455,
-      "公司法": 0.6585,
-      "数据合规": 0.5,
+      "税法": 0.9,
+      "专利": 0.55,
+      "公司法": 0.6429,
+      "数据合规": 0.4,
       "竞争法": 1.0
     }
   }
