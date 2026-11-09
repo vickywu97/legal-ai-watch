@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-11-02",
+  "updated_at": "2026-11-09",
   "models": [
-    "GLM-4",
     "DeepSeek-R1",
-    "Qwen-Max"
+    "Qwen-Max",
+    "GLM-4"
   ],
   "domains": [
     "专利",
@@ -1543,6 +1543,88 @@
           "公司法": 0.6429,
           "数据合规": 0.4,
           "竞争法": 1.0
+        }
+      }
+    },
+    {
+      "date": "2026-11-09",
+      "leaderboard": [
+        {
+          "model": "DeepSeek-R1",
+          "hvi": null,
+          "crfi": null,
+          "coverage": null,
+          "integrity": null,
+          "temporal": null,
+          "citations": 0,
+          "api_errors": 336,
+          "content_fidelity": null,
+          "hr_case": null,
+          "rate_circular": 0.0,
+          "flag_self_contradiction": 0.0,
+          "answered": 112,
+          "rank": null
+        },
+        {
+          "model": "Qwen-Max",
+          "hvi": null,
+          "crfi": null,
+          "coverage": null,
+          "integrity": null,
+          "temporal": null,
+          "citations": 0,
+          "api_errors": 336,
+          "content_fidelity": null,
+          "hr_case": null,
+          "rate_circular": 0.0,
+          "flag_self_contradiction": 0.0,
+          "answered": 112,
+          "rank": null
+        },
+        {
+          "model": "GLM-4",
+          "hvi": null,
+          "crfi": null,
+          "coverage": null,
+          "integrity": null,
+          "temporal": null,
+          "citations": 0,
+          "api_errors": 336,
+          "content_fidelity": null,
+          "hr_case": null,
+          "rate_circular": 0.0,
+          "flag_self_contradiction": 0.0,
+          "answered": 112,
+          "rank": null
+        }
+      ],
+      "domain_hvi": {
+        "DeepSeek-R1": {
+          "民法": null,
+          "刑法": null,
+          "税法": null,
+          "专利": null,
+          "公司法": null,
+          "数据合规": null,
+          "竞争法": null
+        },
+        "Qwen-Max": {
+          "民法": null,
+          "刑法": null,
+          "税法": null,
+          "专利": null,
+          "公司法": null,
+          "数据合规": null,
+          "竞争法": null
+        },
+        "GLM-4": {
+          "民法": null,
+          "刑法": null,
+          "税法": null,
+          "专利": null,
+          "公司法": null,
+          "数据合规": null,
+          "竞争法": null
         }
       }
     }
